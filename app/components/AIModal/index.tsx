@@ -7,7 +7,6 @@ import {
   useChatHistory,
   useChatMessages,
   useVoiceInput,
-  AIMessage,
 } from "./hooks";
 
 interface AIModalProps {

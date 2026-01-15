@@ -27,12 +27,39 @@ export interface IVideo {
   video: string;
 }
 
+export interface IReviewImage {
+  id: number;
+  image: string;
+}
+
+export interface IDeveloperResponse {
+  id: number;
+  developer_name: string;
+  response_text: string;
+  created_at: string;
+}
+
+export interface IReview {
+  id: number;
+  user_name: string;
+  user_avatar?: string;
+  rating: number;
+  comment: string;
+  images: IReviewImage[];
+  created_at: string;
+  helpful_count: number;
+  not_helpful_count: number;
+  user_vote?: 'helpful' | 'not_helpful' | null;
+  developer_response?: IDeveloperResponse;
+}
+
 export interface ICard {
   id: number;
   title: string;
   address: string;
   description: string;
   price: string;
+  price_metr: number;
   rooms: number;
   city: number;
   house_type: string;
@@ -54,6 +81,7 @@ export interface ICard {
   videos: IVideo[];
   documents?: IDocument[];
   questions?: string[];
+  reviews?: IReview[];
   recommendations?: ICard[];
   list_curations?: ICard[];
   renovation?: string;

@@ -16,6 +16,8 @@
   --accent-secondary-rgb: 243, 248, 254;
   --border-color: #d1d5db;
   --card-bg: #ffffff;
+  --modal-bg: #ffffff;
+  --bg-button: #0000001A;
 }
 
 [data-theme="dark"] {
@@ -30,10 +32,12 @@
   --accent-secondary-rgb: 37, 38, 42;
   --border-color: #374151;
   --card-bg: #1f1f1f;
+  --modal-bg: #25262a;
+  --bg-button: #FFFFFF1A;
 }
 
 .tabs-scroll::-webkit-scrollbar {
-  height: 4px;
+  height: 0px;
 }
 
 .tabs-scroll::-webkit-scrollbar-track {
@@ -41,17 +45,16 @@
 }
 
 .tabs-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--border-color);
-  border-radius: 10px;
+  background-color: transparent;
 }
 
 .tabs-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: var(--text-secondary);
+  background-color: transparent;
 }
 
 .tabs-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-color) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 ::-webkit-scrollbar {

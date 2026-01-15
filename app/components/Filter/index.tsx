@@ -1,12 +1,13 @@
 "use client";
 
 import { FilterButton } from "@/app/components/Filter/ui/FilterButton";
-import { FiltersModal } from "@/app/components/Filter/ui/FiltersModal";
-import { ModalShell } from "@/app/components/Filter/ui/ModalShell";
 import { AIModal } from "@/app/components/AIModal";
 import { ICardFilters } from "@/app/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { useAppSelector } from "@/app/shared/redux/hooks";
+
+const FiltersModal = lazy(() => import("@/app/components/Filter/ui/FiltersModal").then(m => ({ default: m.FiltersModal })));
+const ModalShell = lazy(() => import("@/app/components/Filter/ui/ModalShell").then(m => ({ default: m.ModalShell })));
 
 interface FiltersPanelProps {
   onApplyFilters: (filters: ICardFilters) => void;
@@ -20,11 +21,15 @@ export default function FiltersPanel({
   const { isAuth } = useAppSelector((state) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
+  
+  // Мемоизируем currentFilters для стабильности
+  const currentFiltersString = useMemo(() => JSON.stringify(currentFilters), [currentFilters]);
   const [filters, setFilters] = useState<ICardFilters>(currentFilters);
 
   useEffect(() => {
     setFilters(currentFilters);
-  }, [currentFilters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFiltersString]);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
@@ -52,7 +57,7 @@ export default function FiltersPanel({
   }, []);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-x-2">
       <span 
         className="text-sm font-[family-name:var(--font-stetica-regular)] hidden sm:block animate-fade-in"
         style={{ 
@@ -65,7 +70,7 @@ export default function FiltersPanel({
       <button
         type="button"
         onClick={handleAIChat}
-        className="rounded-full p-3 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center cursor-pointer transition-all duration-300 hover:opacity-90 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl group relative"
+        className="rounded-full p-[10.5px] bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center cursor-pointer transition-all duration-300 hover:opacity-90 shadow-lg group relative"
         aria-label="Открыть чат с ИИ"
         title="Чат с ИИ помощником"
       >
@@ -95,15 +100,17 @@ export default function FiltersPanel({
           />
         </svg>
       </button>
-      <FilterButton onClick={() => setIsOpen(true)} />
+      <FilterButton onClick={useCallback(() => setIsOpen(true), [])} />
       {isOpen && (
-        <ModalShell onClose={handleClose}>
-          <FiltersModal
-            initial={filters}
-            onClose={handleClose}
-            onApply={handleApply}
-          />
-        </ModalShell>
+        <Suspense fallback={null}>
+          <ModalShell onClose={handleClose}>
+            <FiltersModal
+              initial={filters}
+              onClose={handleClose}
+              onApply={handleApply}
+            />
+          </ModalShell>
+        </Suspense>
       )}
       {isAIOpen && <AIModal onClose={handleAIClose} />}
     </div>

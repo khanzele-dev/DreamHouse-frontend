@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/app/shared/contexts/ThemeContext";
 import { Footer } from "@/app/components/Footer";
 import { Header } from "@/app/components/Header";
 import { AuthChecker } from "@/app/components/AuthChecker";
+import { Suspense } from "react";
 
 const AA_Stetica_Bold = localFont({
   src: "../public/fonts/AA_Stetica_Bold.otf",
@@ -45,7 +46,9 @@ export default function RootLayout({
           >
             <AuthChecker />
             <Header />
-            <main className="flex-1">{children}</main>
+            <Suspense>
+              <main className="flex-1">{children}</main>
+            </Suspense>
             <Footer />
           </body>
         </ThemeProvider>

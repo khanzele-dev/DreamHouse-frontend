@@ -2,7 +2,7 @@
 
 import { ICardFilters } from "@/app/types";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 
 export function parseFiltersFromUrl(
   searchParams: URLSearchParams
@@ -114,6 +114,24 @@ export function serializeFiltersToUrl(filters: ICardFilters): string {
 }
 
 /**
+ * Сравнивает два объекта фильтров на равенство
+ */
+function areFiltersEqual(filters1: ICardFilters, filters2: ICardFilters): boolean {
+  const keys1 = Object.keys(filters1).sort();
+  const keys2 = Object.keys(filters2).sort();
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (filters1[key as keyof ICardFilters] !== filters2[key as keyof ICardFilters]) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
  * Хук для работы с фильтрами через URL
  */
 export function useFiltersFromUrl() {
@@ -121,19 +139,60 @@ export function useFiltersFromUrl() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<ICardFilters>({});
+  const filtersRef = useRef<ICardFilters>({});
+  
+  // Мемоизируем сериализованную строку searchParams для сравнения
+  const searchParamsString = searchParams.toString();
+  const prevSearchParamsStringRef = useRef<string>(searchParamsString);
+  
   useEffect(() => {
-    const parsedFilters = parseFiltersFromUrl(searchParams);
-    setFilters(parsedFilters);
-  }, [searchParams]);
+    // Обновляем только если searchParams действительно изменились
+    if (searchParamsString !== prevSearchParamsStringRef.current) {
+      prevSearchParamsStringRef.current = searchParamsString;
+      const parsedFilters = parseFiltersFromUrl(searchParams);
+      
+      // Обновляем только если фильтры действительно изменились
+      if (!areFiltersEqual(parsedFilters, filtersRef.current)) {
+        filtersRef.current = parsedFilters;
+        setFilters(parsedFilters);
+      }
+    }
+  }, [searchParamsString, searchParams]);
+  
   const updateFilters = useCallback(
     (newFilters: ICardFilters) => {
-      setFilters(newFilters);
-      const queryString = serializeFiltersToUrl(newFilters);
-      const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
-      router.push(newUrl, { scroll: false });
+      // Обновляем только если фильтры действительно изменились
+      if (!areFiltersEqual(newFilters, filtersRef.current)) {
+        filtersRef.current = newFilters;
+        setFilters(newFilters);
+        const queryString = serializeFiltersToUrl(newFilters);
+        const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+        router.push(newUrl, { scroll: false });
+      }
     },
     [pathname, router]
   );
 
-  return { filters, updateFilters };
+  // Мемоизируем filters для стабильной ссылки
+  const memoizedFilters = useMemo(() => filters, [
+    filters.city,
+    filters.category,
+    filters.house_type,
+    filters.elevator,
+    filters.parking,
+    filters.building_material,
+    filters.balcony,
+    filters.price_min,
+    filters.price_max,
+    filters.area_min,
+    filters.area_max,
+    filters.floors_min,
+    filters.floors_max,
+    filters.rooms_min,
+    filters.rooms_max,
+    // filters используется через отдельные поля для оптимизации
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ]);
+
+  return { filters: memoizedFilters, updateFilters };
 }

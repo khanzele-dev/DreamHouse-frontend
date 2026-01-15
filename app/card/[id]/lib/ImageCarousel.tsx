@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Lightbox from "yet-another-react-lightbox";
 import useEmblaCarousel from "embla-carousel-react";
-import { getValidImageSrc } from "./index";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import "yet-another-react-lightbox/styles.css";
 
 interface ImageCarouselProps {
@@ -27,10 +26,18 @@ export function ImageCarousel({ images, videos = [], title }: ImageCarouselProps
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const mediaItems: MediaItem[] = [
-    ...videos.map(vid => ({ type: 'video' as const, src: vid.video, id: vid.id })),
-    ...images.map(img => ({ type: 'image' as const, src: img.image, id: img.id }))
-  ];
+  // Фильтруем и валидируем медиа-файлы
+  const mediaItems: MediaItem[] = useMemo(() => {
+    const validVideos = videos
+      .filter(vid => vid.video && typeof vid.video === 'string' && vid.video.trim() !== '')
+      .map(vid => ({ type: 'video' as const, src: vid.video, id: vid.id }));
+    
+    const validImages = images
+      .filter(img => img.image && typeof img.image === 'string' && img.image.trim() !== '')
+      .map(img => ({ type: 'image' as const, src: img.image, id: img.id }));
+    
+    return [...validVideos, ...validImages];
+  }, [videos, images]);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -75,9 +82,9 @@ export function ImageCarousel({ images, videos = [], title }: ImageCarouselProps
     return () => window.removeEventListener('resize', handleResize);
   }, [emblaApi]);
 
-  const lightboxSlides = images.map((img) => ({
-    src: getValidImageSrc(img.image),
-  }));
+  const lightboxSlides = useMemo(() => images.map((img) => ({
+    src: img.image,
+  })), [images]);
 
   const handleImageClick = useCallback((itemSrc: string) => {
     const imageIndex = images.findIndex(img => img.image === itemSrc);
@@ -86,6 +93,22 @@ export function ImageCarousel({ images, videos = [], title }: ImageCarouselProps
       setLightboxOpen(true);
     }
   }, [images]);
+
+  // Если нет медиа-файлов, показываем placeholder
+  if (mediaItems.length === 0) {
+    return (
+      <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+        <div className="w-full h-full bg-gray-200 dark:bg-gray-700 rounded-2xl flex items-center justify-center">
+          <div className="text-center">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-2" style={{ color: "var(--text-secondary)" }}>
+              <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z" fill="currentColor" opacity="0.5"/>
+            </svg>
+            <p style={{ color: "var(--text-secondary)" }}>Изображения отсутствуют</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -106,12 +129,27 @@ export function ImageCarousel({ images, videos = [], title }: ImageCarouselProps
                     }}
                   >
                     <Image
-                      src={getValidImageSrc(item.src)}
+                      src={item.src}
                       alt={`${title} - фото ${index + 1}`}
                       fill
                       sizes="(max-width: 1300px) 100vw, 1300px"
                       className="object-cover"
                       priority={index === 0}
+                      loading={index === 0 ? 'eager' : 'lazy'}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        // Заменяем на серый блок при ошибке загрузки
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--text-secondary); opacity: 0.5;">
+                                <path d="M21 19V5C21 3.9 20.1 3 19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19ZM8.5 13.5L11 16.51L14.5 12L19 18H5L8.5 13.5Z" fill="currentColor"/>
+                              </svg>
+                            </div>
+                          `;
+                        }
+                      }}
                     />
                   </div>
                 ) : (

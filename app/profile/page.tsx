@@ -18,7 +18,6 @@ function ProfileContent() {
     isDeleteModalOpen,
     isDeleting,
     setIsDeleteModalOpen,
-    handleChangePassword,
     handleLogout,
     handleDeleteAccount,
     handleConfirmDelete,
@@ -44,7 +43,6 @@ function ProfileContent() {
                 profile={profile}
                 setProfile={setProfile}
                 message={message}
-                onChangePassword={handleChangePassword}
                 onLogout={handleLogout}
                 onDeleteAccount={handleDeleteAccount}
               />

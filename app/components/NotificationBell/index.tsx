@@ -15,12 +15,12 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
   const { data: notifications = [], isLoading } = useGetNotificationsQuery();
   const [markAsRead] = useMarkNotificationAsReadMutation();
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unreadCount = notifications?.filter((n) => !n.is_read).length;
 
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, []);
 
@@ -62,23 +62,20 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Заголовок */}
-        <div
-          className="flex items-center justify-between px-6 py-4 border-b"
-          style={{
-            borderColor: "var(--border-color)",
-          }}
-        >
+        <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <div>
               <h3
-                className="text-xl font-[family-name:var(--font-stetica-medium)]"
+                className="text-xl font-[family-name:var(--font-stetica-regular)]"
                 style={{ color: "var(--text-primary)" }}
               >
                 Последние уведомления
               </h3>
               {unreadCount > 0 && (
-                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   {unreadCount} непрочитанных
                 </p>
               )}
@@ -93,15 +90,14 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
           </button>
         </div>
 
-        {/* Список уведомлений */}
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
             <div className="p-12 text-center">
-              <div 
+              <div
                 className="inline-block w-10 h-10 border-4 border-t-transparent rounded-full"
-                style={{ 
+                style={{
                   borderColor: "var(--accent-primary)",
-                  borderTopColor: "transparent"
+                  borderTopColor: "transparent",
                 }}
               ></div>
               <p
@@ -112,24 +108,32 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
               </p>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="p-12 text-center">
-              <div 
-                className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center"
-                style={{ backgroundColor: "var(--bg-secondary)" }}
+            <div className="flex flex-col items-center justify-center content-center p-12 text-center gap-y-1">
+              <svg
+                width="103"
+                height="126"
+                viewBox="0 0 103 126"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
               >
-                <Bell className="w-10 h-10" style={{ color: "var(--text-secondary)" }} />
-              </div>
+                <path
+                  d="M51.3944 0C40.7195 0 30.4817 4.24061 22.9334 11.789C15.385 19.3373 11.1444 29.575 11.1444 40.25V60.536C11.1453 61.428 10.9386 62.3079 10.5407 63.1063L0.667936 82.846C0.185663 83.8104 -0.042062 84.882 0.00638991 85.9592C0.0548418 87.0364 0.377862 88.0833 0.94477 89.0005C1.51168 89.9177 2.30365 90.6747 3.24547 91.1997C4.18729 91.7247 5.24768 92.0002 6.32594 92H96.4629C97.5412 92.0002 98.6016 91.7247 99.5434 91.1997C100.485 90.6747 101.277 89.9177 101.844 89.0005C102.411 88.0833 102.734 87.0364 102.782 85.9592C102.831 84.882 102.603 83.8104 102.121 82.846L92.2539 63.1063C91.8541 62.3084 91.6454 61.4284 91.6444 60.536V40.25C91.6444 29.575 87.4038 19.3373 79.8555 11.789C72.3071 4.24061 62.0694 0 51.3944 0ZM51.3944 109.25C47.8257 109.252 44.3442 108.147 41.4298 106.087C38.5154 104.028 36.3115 101.115 35.1219 97.75H67.6669C66.4774 101.115 64.2735 104.028 61.3591 106.087C58.4447 108.147 54.9632 109.252 51.3944 109.25Z"
+                  fill="#3366CC"
+                  fillOpacity="0.4"
+                />
+              </svg>
               <p
-                className="text-lg font-[family-name:var(--font-stetica-bold)] mb-2"
+                className="text-lg font-[family-name:var(--font-stetica-regular)]"
                 style={{ color: "var(--text-primary)" }}
               >
-                Нет уведомлений
+                Здесь пока ничего нет
               </p>
               <p
-                className="text-sm"
+                className="text-base"
                 style={{ color: "var(--text-secondary)" }}
               >
-                Здесь будут появляться важные обновления
+                Здесь будут собраны уведомления о новой недвижимости тех
+                застройщиков, на которых вы подписаны{" "}
               </p>
             </div>
           ) : (
@@ -137,7 +141,12 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
               {notifications.map((notification) => (
                 <button
                   key={notification.id}
-                  onClick={() => handleNotificationClick(notification.id, notification.is_read)}
+                  onClick={() =>
+                    handleNotificationClick(
+                      notification.id,
+                      notification.is_read
+                    )
+                  }
                   className="w-full text-left p-4 rounded-xl border"
                   style={{
                     backgroundColor: notification.is_read
@@ -147,7 +156,7 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
                   }}
                 >
                   <div className="flex gap-4">
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: "var(--accent-primary)" }}
                     >
@@ -162,7 +171,7 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
                           {notification.title}
                         </h4>
                         {!notification.is_read && (
-                          <span 
+                          <span
                             className="w-2 h-2 rounded-full"
                             style={{ backgroundColor: "var(--accent-primary)" }}
                           ></span>

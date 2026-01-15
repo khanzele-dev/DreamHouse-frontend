@@ -15,7 +15,7 @@ export function FieldCheckbox({
         onChange={(e) => onChange(e.target.checked)}
         className="w-5 h-5 rounded"
       />
-      <span className="text-sm font-[family-name:var(--font-stetica-bold)]">
+      <span className="text-lg font-[family-name:var(--font-stetica-regular)]">
         {label}
       </span>
     </label>

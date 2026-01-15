@@ -23,13 +23,13 @@ export function DescriptionAccordion({ description }: { description?: string }) 
           height="20" 
           viewBox="0 0 24 24" 
           fill="none" 
-          className="transition-transform duration-300"
+          className="transition-transform duration-300 flex-shrink-0"
           style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
         >
           <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </summary>
-      <div className="px-6 pb-6 pt-2 text-base leading-relaxed space-y-3" style={{ color: "var(--text-secondary)" }}>
+      <div className="px-4 sm:px-6 pb-4 sm:pb-6 pt-2 text-sm sm:text-base leading-relaxed space-y-3" style={{ color: "var(--text-secondary)", wordBreak: "break-word" }}>
         {paragraphs.length > 0
           ? paragraphs.map((p, i) => <p key={i}>{p}</p>)
           : <p>Описание не указано</p>}

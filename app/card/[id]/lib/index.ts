@@ -52,7 +52,3 @@ export const translateParking = (parking: string): string => {
 export const formatPrice = (price: string | number): string => {
   return new Intl.NumberFormat("ru-RU").format(parseFloat(String(price)));
 };
-
-export const getValidImageSrc = (imageSrc: string | undefined): string => {
-  return imageSrc && imageSrc.trim() !== "" ? imageSrc : "/placeholder.jpg";
-};

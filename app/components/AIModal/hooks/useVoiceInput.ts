@@ -157,6 +157,7 @@ export function useVoiceInput({ onFinalText }: UseVoiceInputProps) {
     };
 
     checkSilence();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stopVAD = useCallback(() => {

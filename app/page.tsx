@@ -2,26 +2,94 @@
 
 import Image from "next/image";
 import FiltersPanel from "@/app/components/Filter";
-import { Suspense } from "react";
+import { CategoryList } from "@/app/components/CategoryList";
+import { Suspense, useMemo, useRef, useEffect } from "react";
 import { VirtualizedCardList } from "@/app/components/VirtualizedCardList";
 import { useAppDispatch, useAppSelector } from "@/app/shared/redux/hooks";
 import { useFiltersFromUrl } from "@/app/shared/hooks/useFiltersFromUrl";
 import { resetPagination } from "@/app/shared/redux/slices/cards";
-import { useEffect } from "react";
+import { ICardFilters } from "@/app/types";
+
+/**
+ * Сравнивает два объекта фильтров на равенство
+ */
+function areFiltersEqual(filters1: ICardFilters, filters2: ICardFilters): boolean {
+  const keys1 = Object.keys(filters1).sort();
+  const keys2 = Object.keys(filters2).sort();
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (filters1[key as keyof ICardFilters] !== filters2[key as keyof ICardFilters]) {
+      return false;
+    }
+  }
+  
+  return true;
+}
 
 function HomeContent() {
   const dispatch = useAppDispatch();
   const { error } = useAppSelector((state) => state.cards);
   const { filters, updateFilters } = useFiltersFromUrl();
-
+  
+  // Извлекаем q из filters для использования в VirtualizedCardList
+  const { q, ...cardFilters } = filters as ICardFilters & { q?: string };
+  const prevFiltersRef = useRef<ICardFilters & { q?: string }>(filters as ICardFilters & { q?: string });
+  
+  // Мемоизируем сериализованную строку фильтров
+  const filtersString = useMemo(() => {
+    return JSON.stringify(filters);
+  }, [
+    filters.city,
+    filters.category,
+    filters.house_type,
+    filters.elevator,
+    filters.parking,
+    filters.building_material,
+    filters.balcony,
+    filters.price_min,
+    filters.price_max,
+    filters.area_min,
+    filters.area_max,
+    filters.floors_min,
+    filters.floors_max,
+    filters.rooms_min,
+    filters.rooms_max,
+    // filters используется через отдельные поля для оптимизации
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ]);
+  
   useEffect(() => {
-    dispatch(resetPagination());
-  }, [dispatch, filters]);
+    // Сбрасываем пагинацию только если фильтры действительно изменились
+    const filtersWithoutQ = { ...filters } as ICardFilters & { q?: string };
+    delete filtersWithoutQ.q;
+    const prevFiltersWithoutQ = { ...prevFiltersRef.current } as ICardFilters & { q?: string };
+    delete prevFiltersWithoutQ.q;
+    
+    if (!areFiltersEqual(filtersWithoutQ as ICardFilters, prevFiltersWithoutQ as ICardFilters) || 
+        (filters as ICardFilters & { q?: string }).q !== prevFiltersRef.current.q) {
+      prevFiltersRef.current = filters as ICardFilters & { q?: string };
+      dispatch(resetPagination());
+    }
+  }, [dispatch, filtersString, filters]);
+
+  const handleCategoryChange = (category: string | undefined) => {
+    updateFilters({
+      ...filters,
+      category: category as "flat" | "new_building" | undefined,
+    });
+  };
 
   return (
     <>
-      <div className="flex items-center gap-3">
-        <div className="flex-1"></div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center flex-1 min-w-0">
+          <CategoryList
+            currentFilters={filters}
+            onCategoryChange={handleCategoryChange}
+          />
+        </div>
         <div className="flex-shrink-0">
           <FiltersPanel
             onApplyFilters={updateFilters}
@@ -59,7 +127,7 @@ function HomeContent() {
         </div>
       )}
 
-      <VirtualizedCardList filters={filters} />
+      <VirtualizedCardList filters={cardFilters} query={q} />
     </>
   );
 }

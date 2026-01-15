@@ -20,7 +20,7 @@ export function CardItemPreview({ card }: CardItemPreviewProps): ReactElement {
   const { isAuth } = useAppSelector((state) => state.auth);
 
   const formattedPrice = new Intl.NumberFormat("ru-RU").format(
-    parseFloat(card.price)
+    card.price_metr
   );
   const mainImage =
     card.images?.[0]?.image && card.images[0].image.trim() !== ""
@@ -128,7 +128,7 @@ export function CardItemPreview({ card }: CardItemPreviewProps): ReactElement {
                     transition: "color 0.3s ease",
                   }}
                 >
-                  4.7
+                  {card.rating}
                 </span>
               </div>
 

@@ -1,3 +1,28 @@
+// SMS Login requests
+export interface IRequestSmsCodeRequest {
+    phone_number: string;
+}
+
+export interface IVerifySmsCodeRequest {
+    phone_number: string;
+    otp: string;
+}
+
+// SMS Register requests
+export interface IRegisterSmsRequest {
+    phone_number: string;
+    name: string;
+    ref_code?: string;
+}
+
+export interface IConfirmRegisterRequest {
+    phone_number: string;
+    otp: string;
+    name: string;
+    ref_code?: string;
+}
+
+// Legacy interfaces (для обратной совместимости, если нужно)
 export interface IRegisterRequest {
     name: string;
     phone_number: string;
@@ -10,6 +35,36 @@ export interface ILoginRequest {
     password: string;
 }
 
+// SMS responses
+export interface IRequestSmsCodeResponse {
+    ok: boolean;
+    CODE: "OK" | "SMS_REQUEST_FAILED" | "INVALID_PHONE" | "TOO_MANY_REQUESTS" | "SERVER_ERROR";
+    reason: string;
+}
+
+export interface IVerifySmsCodeResponse {
+    ok: boolean;
+    CODE: "OK" | "INVALID_OTP" | "OTP_EXPIRED" | "USER_NOT_FOUND" | "SERVER_ERROR";
+    reason: string;
+    access?: string;
+    refresh?: string;
+}
+
+export interface IRegisterSmsResponse {
+    ok: boolean;
+    CODE: "OK" | "REGISTER_FAILED" | "ALREADY_REGISTERED" | "INVALID_PHONE" | "INVALID_DATA" | "TOO_MANY_REQUESTS" | "SERVER_ERROR";
+    reason: string;
+}
+
+export interface IConfirmRegisterResponse {
+    ok: boolean;
+    CODE: "OK" | "REGISTER_FAILED" | "INVALID_OTP" | "OTP_EXPIRED" | "ALREADY_REGISTERED" | "SERVER_ERROR";
+    reason: string;
+    access?: string;
+    refresh?: string;
+}
+
+// Legacy interfaces (для обратной совместимости)
 export interface IRegisterResponse {
     ok: boolean;
     CODE: "OK" | "REGISTER_FAILED" | "ALREADY_REGISTERED" | "INVALID_EMAIL" | "WEAK_PASSWORD" | "INVALID_DATA" | "SERVER_ERROR";

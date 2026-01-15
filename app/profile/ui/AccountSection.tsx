@@ -17,7 +17,6 @@ interface AccountSectionProps {
     profile_photo: string | undefined;
   }>>;
   message: string | null;
-  onChangePassword: () => void;
   onLogout: () => void;
   onDeleteAccount: () => void;
 }
@@ -26,7 +25,6 @@ export function AccountSection({
   profile,
   setProfile,
   message,
-  onChangePassword,
   onLogout,
   onDeleteAccount,
 }: AccountSectionProps) {
@@ -160,7 +158,7 @@ export function AccountSection({
             }
             disabled
             readOnly
-            className="rounded-xl px-4 py-3 focus:outline-none focus:ring-2 cursor-not-allowed"
+            className="rounded-xl px-4 py-3 focus:outline-none cursor-not-allowed"
             style={{
               border: "1px solid var(--border-color)",
               backgroundColor: "var(--bg-secondary)",
@@ -234,7 +232,7 @@ export function AccountSection({
             }}
             disabled
             readOnly
-            className="rounded-xl px-4 py-3 focus:outline-none focus:ring-2 cursor-not-allowed"
+            className="rounded-xl px-4 py-3 focus:outline-none cursor-not-allowed"
             style={{
               border: "1px solid var(--border-color)",
               backgroundColor: "var(--bg-secondary)",
@@ -276,13 +274,6 @@ export function AccountSection({
               }}
             />
           </div>
-          <button
-            onClick={onChangePassword}
-            className="mt-2 text-sm transition-opacity cursor-pointer hover:opacity-80"
-            style={{ color: "var(--accent-primary)" }}
-          >
-            Сменить пароль
-          </button>
         </div>
 
         <div className="flex flex-col space-y-4">

@@ -62,7 +62,7 @@ export default function DeveloperDetailPage() {
   if (loading) {
     return (
       <div
-        className="flex flex-col min-h-screen justify-start content-center items-center font-[family-name:var(--font-stetica-regular)]"
+        className="flex flex-col justify-start content-center items-center font-[family-name:var(--font-stetica-regular)]"
         style={{
           backgroundColor: "var(--bg-primary)",
           transition: "background-color 0.3s ease",
@@ -116,7 +116,7 @@ export default function DeveloperDetailPage() {
   if (error || !currentDeveloper) {
     return (
       <div
-        className="flex flex-col min-h-screen justify-center items-center"
+        className="flex flex-col justify-center items-center"
         style={{ backgroundColor: "var(--bg-primary)" }}
       >
         <div className="text-center py-10 text-[#FF4444]">
@@ -128,14 +128,14 @@ export default function DeveloperDetailPage() {
 
   return (
     <div
-      className="flex flex-col min-h-screen justify-start content-center items-center font-[family-name:var(--font-stetica-regular)]"
+      className="flex flex-col justify-start content-center items-center font-[family-name:var(--font-stetica-regular)]"
       style={{
         backgroundColor: "var(--bg-primary)",
         transition: "background-color 0.3s ease",
       }}
     >
       <div className="w-full max-w-[1300px] flex flex-col content-center gap-y-6 sm:gap-y-[25px] px-4 sm:px-6 lg:px-8 pt-6 pb-6 flex-grow">
-        <div className="rounded-2xl p-6 sm:p-8" style={{}}>
+        <div className="rounded-2xl py-6 px-4 sm:py-8 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div
               className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
@@ -196,17 +196,14 @@ export default function DeveloperDetailPage() {
               <button
                 onClick={handleSubscriptionToggle}
                 disabled={isLoadingSubscription}
-                className={`cursor-pointer max-w-[340px] sm:w-auto px-6 py-3 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 ${
+                className={`cursor-pointer max-w-[340px] sm:w-auto px-6 py-3 rounded-full transition-all duration-300 flex items-center justify-center gap-2 font-[family-name:var(--font-stetica-medium)] ${
                   isLoadingSubscription ? "opacity-60 cursor-not-allowed" : "hover:opacity-90 active:scale-[0.98]"
                 }`}
                 style={{
-                  backgroundColor: "transparent",
-                  border: currentDeveloper.is_subscribed
-                    ? "1px solid var(--border-color)"
-                    : "2px solid var(--accent-primary)",
+                  backgroundColor: currentDeveloper.is_subscribed ? "var(--bg-button)" : "var(--accent-primary)",
                   color: currentDeveloper.is_subscribed
                     ? "var(--text-secondary)"
-                    : "var(--accent-primary)",
+                    : "var(--text-primary)",
                 }}
               >
                 {isLoadingSubscription ? (
@@ -238,10 +235,10 @@ export default function DeveloperDetailPage() {
         </div>
 
         <h2
-          className="text-2xl sm:text-3xl font-[family-name:var(--font-stetica-bold)]"
+          className="text-2xl sm:text-3xl font-[family-name:var(--font-stetica-medium)]"
           style={{ color: "var(--text-primary)" }}
         >
-          Объекты застройщика
+          Размещения профиля
         </h2>
 
         {currentDeveloper.cards && currentDeveloper.cards.length > 0 ? (

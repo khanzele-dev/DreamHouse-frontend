@@ -28,8 +28,6 @@ export function RangeSlider({
   const [localMin, setLocalMin] = useState(valueMin ?? min);
   const [localMax, setLocalMax] = useState(valueMax ?? max);
   const [error, setError] = useState<string | null>(null);
-  const [showMinTooltip, setShowMinTooltip] = useState(false);
-  const [showMaxTooltip, setShowMaxTooltip] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,7 +58,7 @@ export function RangeSlider({
 
   const handleMinKeyDown = (e: React.KeyboardEvent) => {
     let newValue = localMin;
-    
+
     if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
       e.preventDefault();
       newValue = Math.max(min, localMin - step);
@@ -80,7 +78,7 @@ export function RangeSlider({
       e.preventDefault();
       newValue = localMax;
     }
-    
+
     if (newValue !== localMin) {
       handleMinChange(newValue);
     }
@@ -88,7 +86,7 @@ export function RangeSlider({
 
   const handleMaxKeyDown = (e: React.KeyboardEvent) => {
     let newValue = localMax;
-    
+
     if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
       e.preventDefault();
       newValue = Math.max(localMin, localMax - step);
@@ -108,7 +106,7 @@ export function RangeSlider({
       e.preventDefault();
       newValue = max;
     }
-    
+
     if (newValue !== localMax) {
       handleMaxChange(newValue);
     }
@@ -119,17 +117,38 @@ export function RangeSlider({
 
   return (
     <div className="space-y-4">
-      <label 
+      <label
         className="block text-sm font-[family-name:var(--font-stetica-bold)]"
         id={`${label}-label`}
       >
         {label}
       </label>
-
+      <div className="flex justify-between items-center gap-2 text-sm px-2">
+        <div className="flex items-center gap-2">
+          <span style={{ color: "var(--text-secondary)" }}>от</span>
+          <span
+            className="font-[family-name:var(--font-stetica-bold)]"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {formatValue(localMin)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span style={{ color: "var(--text-secondary)" }}>до</span>
+          <span
+            className="font-[family-name:var(--font-stetica-bold)]"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {formatValue(localMax)}
+          </span>
+        </div>
+      </div>
       <div className="px-2">
         <div className="relative h-8" ref={sliderRef}>
           {error && (
-            <div className="text-red-500 text-xs mb-2" role="alert">{error}</div>
+            <div className="text-red-500 text-xs mb-2" role="alert">
+              {error}
+            </div>
           )}
           <div
             className="absolute w-full h-1 rounded-full top-1/2 -translate-y-1/2"
@@ -154,11 +173,8 @@ export function RangeSlider({
               value={localMin}
               onChange={(e) => handleMinChange(Number(e.target.value))}
               onKeyDown={handleMinKeyDown}
-              onMouseEnter={() => setShowMinTooltip(true)}
-              onMouseLeave={() => setShowMinTooltip(false)}
-              onFocus={() => setShowMinTooltip(true)}
-              onBlur={() => setShowMinTooltip(false)}
-              className="absolute w-full h-1 bg-transparent appearance-none pointer-events-none cursor-pointer focus:outline-none"
+              
+              className="absolute w-full bg-transparent appearance-none pointer-events-none cursor-pointer focus:outline-none"
               style={{
                 zIndex: localMin > max - (max - min) / 2 ? 5 : 3,
               }}
@@ -170,21 +186,7 @@ export function RangeSlider({
               aria-valuenow={localMin}
               tabIndex={0}
             />
-            {showMinTooltip && (
-              <div
-                className="absolute -top-10 px-2 py-1 rounded text-xs font-medium whitespace-nowrap pointer-events-none"
-                style={{
-                  backgroundColor: "var(--card-bg)",
-                  border: "1px solid var(--border-color)",
-                  color: "var(--text-primary)",
-                  left: `${minPercent}%`,
-                  transform: "translateX(-50%)",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                }}
-              >
-                {formatValue(localMin)}
-              </div>
-            )}
+            
           </div>
 
           <div className="relative">
@@ -201,11 +203,8 @@ export function RangeSlider({
                 }
               }}
               onKeyDown={handleMaxKeyDown}
-              onMouseEnter={() => setShowMaxTooltip(true)}
-              onMouseLeave={() => setShowMaxTooltip(false)}
-              onFocus={() => setShowMaxTooltip(true)}
-              onBlur={() => setShowMaxTooltip(false)}
-              className="absolute w-full h-1 bg-transparent appearance-none pointer-events-none cursor-pointer focus:outline-none"
+              
+              className="absolute w-full bg-transparent appearance-none pointer-events-none cursor-pointer focus:outline-none"
               style={{
                 zIndex: 4,
               }}
@@ -217,36 +216,26 @@ export function RangeSlider({
               aria-valuenow={localMax}
               tabIndex={0}
             />
-            {showMaxTooltip && (
-              <div
-                className="absolute -top-10 px-2 py-1 rounded text-xs font-medium whitespace-nowrap pointer-events-none"
-                style={{
-                  backgroundColor: "var(--card-bg)",
-                  border: "1px solid var(--border-color)",
-                  color: "var(--text-primary)",
-                  left: `${maxPercent}%`,
-                  transform: "translateX(-50%)",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                }}
-              >
-                {formatValue(localMax)}
-              </div>
-            )}
+            
           </div>
 
           <style jsx>{`
             input[type="range"] {
               pointer-events: none;
+              position: absolute;
+              left: 0;
+              top: 50%;
+              transform: translateY(25%);
+              height: 20px;
             }
             input[type="range"]::-webkit-slider-thumb {
               pointer-events: auto;
               -webkit-appearance: none;
-              width: 18px;
-              height: 18px;
+              width: 20px;
+              height: 20px;
               border-radius: 50%;
               background: var(--accent-primary);
               cursor: pointer;
-              border: 3px solid white;
               box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
               transition: transform 0.2s;
             }
@@ -270,27 +259,6 @@ export function RangeSlider({
               transform: scale(1.15);
             }
           `}</style>
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center gap-2 text-sm px-2">
-        <div className="flex items-center gap-2">
-          <span style={{ color: "var(--text-secondary)" }}>от</span>
-          <span
-            className="font-[family-name:var(--font-stetica-bold)]"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {formatValue(localMin)}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span style={{ color: "var(--text-secondary)" }}>до</span>
-          <span
-            className="font-[family-name:var(--font-stetica-bold)]"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {formatValue(localMax)}
-          </span>
         </div>
       </div>
     </div>

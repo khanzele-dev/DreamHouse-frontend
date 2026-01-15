@@ -14,14 +14,19 @@ interface FetchCardsResponse {
 
 export const fetchCards = createAsyncThunk<
   FetchCardsResponse & { append?: boolean },
-  ICardFilters & { page?: number; append?: boolean }
+  ICardFilters & { page?: number; append?: boolean; q?: string }
 >("cards/fetchCards", async (filters, { rejectWithValue }) => {
   try {
     const params = new URLSearchParams();
-    const { page = 1, append, ...restFilters } = filters || {};
+    const { page = 1, append, q, ...restFilters } = filters || {};
 
     params.append("page", String(page));
     params.append("page_size", "20");
+    
+    // Добавляем поисковый запрос если есть
+    if (q && q.trim().length > 0) {
+      params.append("q", q.trim());
+    }
 
     if (restFilters) {
       Object.entries(restFilters).forEach(([key, value]) => {
@@ -86,26 +91,56 @@ export const fetchCardById = createAsyncThunk<ICard, number>(
   }
 );
 
-export const searchCards = createAsyncThunk<ICard[], string>(
-  "cards/searchCards",
-  async (query, { rejectWithValue }) => {
-    try {
-      if (!query || query.trim().length === 0) {
-        return [];
-      }
-      const { data } = await axiosInstance.get<ICard[]>(
-        `${API_BASE_URL}/cards/search/?q=${encodeURIComponent(query)}`
-      );
-      return data;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: unknown };
-        message?: string;
-      };
-      return rejectWithValue(axiosError.message || "Ошибка поиска");
+export const searchCards = createAsyncThunk<
+  ICard[],
+  string | { query: string; filters?: ICardFilters }
+>("cards/searchCards", async (arg, { rejectWithValue }) => {
+  try {
+    const query = typeof arg === "string" ? arg : arg.query;
+    const filters = typeof arg === "object" ? arg.filters : undefined;
+    
+    if (!query || query.trim().length === 0) {
+      return [];
     }
+    
+    const params = new URLSearchParams();
+    params.append("q", query.trim());
+    
+    // Добавляем фильтры если они есть
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (
+          value !== undefined &&
+          value !== null &&
+          String(value).trim() !== ""
+        ) {
+          params.append(key, String(value));
+        }
+      });
+    }
+    
+    const { data } = await axiosInstance.get<FetchCardsResponse | ICard[]>(
+      `${API_BASE_URL}/cards/search/?${params.toString()}`
+    );
+    
+    // Обрабатываем ответ с пагинацией или массивом
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    if (data && typeof data === 'object' && 'results' in data) {
+      return Array.isArray(data.results) ? data.results : [];
+    }
+    
+    return [];
+  } catch (error: unknown) {
+    const axiosError = error as {
+      response?: { data?: unknown };
+      message?: string;
+    };
+    return rejectWithValue(axiosError.message || "Ошибка поиска");
   }
-);
+});
 
 export const fetchFavoriteCards = createAsyncThunk<ICard[]>(
   "cards/fetchFavoriteCards",
@@ -256,7 +291,7 @@ const cards = createSlice({
       })
       .addCase(searchCards.fulfilled, (state, action) => {
         state.searchLoading = false;
-        state.searchResults = action.payload;
+        state.searchResults = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(searchCards.rejected, (state, action) => {
         state.searchLoading = false;

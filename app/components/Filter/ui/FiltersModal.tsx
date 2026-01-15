@@ -2,7 +2,7 @@ import { FieldChips } from "@/app/components/Filter/ui/FieldChips";
 import { FieldSelect } from "@/app/components/Filter/ui/FieldSelect";
 import { RangeSlider } from "@/app/components/Filter/ui/RangeSlider";
 import { ICardFilters } from "@/app/types";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 
 interface FiltersModalProps {
   initial: ICardFilters;
@@ -10,10 +10,10 @@ interface FiltersModalProps {
   onApply: (filters: ICardFilters) => void;
 }
 
-export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
-  const [localFilters, setLocalFilters] = useState<ICardFilters>({
+export const FiltersModal = memo(function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
+  const [localFilters, setLocalFilters] = useState<ICardFilters>(() => ({
     ...initial,
-  });
+  }));
 
   useEffect(() => {
     setLocalFilters({ ...initial });
@@ -21,10 +21,14 @@ export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
 
   const updateField = useCallback(
     (key: keyof ICardFilters, value: string | number | boolean | undefined) => {
-      setLocalFilters((prev) => ({
-        ...prev,
-        [key]: value === "" ? undefined : value,
-      }));
+      setLocalFilters((prev) => {
+        const newValue = value === "" ? undefined : value;
+        if (prev[key] === newValue) return prev;
+        return {
+          ...prev,
+          [key]: newValue,
+        };
+      });
     },
     []
   );
@@ -32,22 +36,38 @@ export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
   const toggleSingleChip = useCallback(
     (key: keyof ICardFilters, value: string) => {
       setLocalFilters((prev) => {
+        const current = prev[key];
+        // If the stored value is boolean, convert incoming string to boolean and toggle
+        if (typeof current === "boolean") {
+          const incoming = value === "true";
+          const newValue = current === incoming ? undefined : incoming;
+          if (prev[key] === newValue) return prev;
+          return {
+            ...prev,
+            [key]: newValue,
+          };
+        }
+
         const currentValue = prev[key] as string | undefined;
+        const newValue = currentValue === value ? undefined : value;
+        if (prev[key] === newValue) return prev;
         return {
           ...prev,
-          [key]: currentValue === value ? undefined : value,
+          [key]: newValue,
         };
       });
     },
     []
   );
 
-  const formatPrice = (value: number) =>
-    `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
+  const formatPrice = useCallback(
+    (value: number) => `${new Intl.NumberFormat("ru-RU").format(value)} ₽`,
+    []
+  );
 
-  const formatArea = (value: number) => `${value} м²`;
+  const formatArea = useCallback((value: number) => `${value} м²`, []);
 
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     const cleanFilters = Object.entries(localFilters).reduce(
       (acc, [key, value]) => {
         if (value !== undefined && value !== "") {
@@ -59,7 +79,7 @@ export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
     );
 
     onApply(cleanFilters);
-  };
+  }, [localFilters, onApply]);
 
   return (
     <>
@@ -98,6 +118,9 @@ export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
           options={[
             { value: "flat", label: "Квартира" },
             { value: "new_building", label: "Новостройка" },
+            { value: "secondary", label: "Вторичка", disabled: true },
+            { value: "land", label: "Земельный участок", disabled: true },
+            { value: "commercial", label: "Коммерческая недвижимость", disabled: true },
           ]}
           value={localFilters.category ? [localFilters.category] : []}
           onToggle={(val) => toggleSingleChip("category", val)}
@@ -230,7 +253,7 @@ export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
             { value: "false", label: "Нет" },
           ]}
           value={localFilters.balcony !== undefined ? [localFilters.balcony.toString()] : []}
-          onToggle={(val) => updateField("balcony", val === "true")}
+          onToggle={(val) => toggleSingleChip("balcony", val)}
           multiSelect={false}
         />
       </div>
@@ -238,7 +261,7 @@ export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
         <button
           type="button"
           onClick={handleApply}
-          className="w-full py-4 rounded-2xl font-[family-name:var(--font-stetica-bold)] text-base transition-all hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2"
+          className="w-full py-3 cursor-pointer rounded-full font-[family-name:var(--font-stetica-bold)] text-base transition-all hover:opacity-90 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2"
           style={{
             backgroundColor: "var(--accent-primary)",
             color: "white",
@@ -250,4 +273,4 @@ export function FiltersModal({ initial, onClose, onApply }: FiltersModalProps) {
       </div>
     </>
   );
-}
+});

@@ -18,7 +18,6 @@ export const CatalogList = ({ List }: ICatalogListProps) => {
   const [catalogItem, setCatalogItem] = useState<ICatalogListItem | null>(
     List.find((item) => item.query === catalog) || null
   );
-
   return (
     <nav aria-label="Каталог">
       <div className="w-full max-w-[1300px] mx-auto">

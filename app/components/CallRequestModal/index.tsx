@@ -7,14 +7,12 @@ import { API_BASE_URL } from "@/app/shared/config/axios";
 interface CallRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
-  apartmentTitle: string;
   cardId: number;
 }
 
 export function CallRequestModal({
   isOpen,
   onClose,
-  apartmentTitle,
   cardId,
 }: CallRequestModalProps) {
   const [name, setName] = useState("");
@@ -39,26 +37,34 @@ export function CallRequestModal({
   const formatPhoneNumber = (value: string): string => {
     const numbers = value.replace(/\D/g, "");
     let formatted = numbers;
-    
+
     if (formatted.startsWith("8")) {
       formatted = "7" + formatted.slice(1);
     }
     if (!formatted.startsWith("7") && formatted.length > 0) {
       formatted = "7" + formatted;
     }
-    
+
     formatted = formatted.slice(0, 11);
-    
+
     if (formatted.length === 0) return "";
     if (formatted.length === 1) return `+${formatted}`;
     if (formatted.length <= 4) return `+${formatted[0]} (${formatted.slice(1)}`;
     if (formatted.length <= 7) {
-      return `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(4)}`;
+      return `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(
+        4
+      )}`;
     }
     if (formatted.length <= 9) {
-      return `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(4, 7)}-${formatted.slice(7)}`;
+      return `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(
+        4,
+        7
+      )}-${formatted.slice(7)}`;
     }
-    return `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(4, 7)}-${formatted.slice(7, 9)}-${formatted.slice(9, 11)}`;
+    return `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(
+      4,
+      7
+    )}-${formatted.slice(7, 9)}-${formatted.slice(9, 11)}`;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +77,6 @@ export function CallRequestModal({
     setIsSubmitting(true);
 
     try {
-      // Извлекаем только цифры из отформатированного номера
       const phoneNumber = phone.replace(/\D/g, "");
 
       await axiosInstance.post(
@@ -143,25 +148,39 @@ export function CallRequestModal({
         </button>
 
         <h2
-          className="text-2xl font-bold mb-2"
+          className="text-2xl mb-2"
           style={{
             color: "var(--text-primary)",
-            fontFamily: "var(--font-stetica-bold)",
+            fontFamily: "var(--font-stetica-medium)",
           }}
         >
           Оставить заявку
         </h2>
 
-        <p
-          className="text-sm mb-6"
-          style={{
-            color: "var(--text-secondary)",
-          }}
-        >
-          Квартира: <span style={{ color: "var(--text-primary)" }}>{apartmentTitle}</span>
-        </p>
-
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium mb-2"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Ваш номер телефона
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              value={phone}
+              onChange={handlePhoneChange}
+              required
+              className="w-full px-4 py-3 rounded-lg outline-none transition-all"
+              style={{
+                backgroundColor: "var(--bg-secondary)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-color)",
+              }}
+              placeholder="+7 (___) ___-__-__"
+            />
+          </div>
           <div>
             <label
               htmlFor="name"
@@ -183,30 +202,6 @@ export function CallRequestModal({
                 border: "1px solid var(--border-color)",
               }}
               placeholder="Введите ваше имя"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="phone"
-              className="block text-sm font-medium mb-2"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Номер телефона
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              value={phone}
-              onChange={handlePhoneChange}
-              required
-              className="w-full px-4 py-3 rounded-lg outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg-secondary)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border-color)",
-              }}
-              placeholder="+7 (___) ___-__-__"
             />
           </div>
 
@@ -241,15 +236,16 @@ export function CallRequestModal({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 rounded-lg font-semibold transition-all duration-300 cursor-pointer"
+            className="w-full py-3 rounded-full transition-all duration-300 cursor-pointer"
             style={{
+              fontFamily: "var(--font-stetica-bold)",
               backgroundColor: "var(--accent-primary)",
               color: "#FFFFFF",
               opacity: isSubmitting ? 0.6 : 1,
               cursor: isSubmitting ? "not-allowed" : "pointer",
             }}
           >
-            {isSubmitting ? "Отправка..." : "Отправить заявку"}
+            {isSubmitting ? "Отправка..." : "Отправить"}
           </button>
         </form>
       </div>

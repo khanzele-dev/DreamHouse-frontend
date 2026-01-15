@@ -146,7 +146,7 @@ export function AsidePanel({ card, formattedPrice }: AsidePanelProps) {
           <button
             onClick={handleSubscriptionToggle}
             disabled={isLoading}
-            className="w-full py-3 rounded-full text-white font-[family-name:var(--font-stetica-bold)] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 rounded-full text-white font-[family-name:var(--font-stetica-medium)] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
             style={{
               backgroundColor: isSubscribed
                 ? "var(--bg-secondary)"
@@ -197,7 +197,6 @@ export function AsidePanel({ card, formattedPrice }: AsidePanelProps) {
       <CallRequestModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        apartmentTitle={card.title}
         cardId={card.id}
       />
     </aside>

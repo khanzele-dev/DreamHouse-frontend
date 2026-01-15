@@ -47,8 +47,8 @@ export function DocumentsAccordion({ documents }: { documents: IDocument[] }) {
       <div className="px-6 pb-6 pt-2">
         {documents.length > 0 ? (
           <div className="space-y-3">
-            {/* Заголовки для десктопа */}
-            <div className="hidden md:grid md:grid-cols-[1fr_150px_130px_50px] gap-4 pb-2 text-sm font-[family-name:var(--font-stetica-medium)]"
+            <div
+              className="hidden md:grid md:grid-cols-[1fr_150px_130px_50px] gap-4 pb-2 text-sm font-[family-name:var(--font-stetica-medium)]"
               style={{ color: "var(--text-secondary)" }}
             >
               <span>Тип документа</span>
@@ -57,51 +57,55 @@ export function DocumentsAccordion({ documents }: { documents: IDocument[] }) {
               <span></span>
             </div>
 
-            {/* Список документов */}
             <ul className="space-y-3 md:space-y-2">
               {documents.map((doc: IDocument, i: number) => (
                 <li
                   key={i}
-                  className="flex flex-col md:grid md:grid-cols-[1fr_150px_130px_50px] gap-2 md:gap-4 md:items-center p-3 md:p-0 rounded-lg md:rounded-none transition-colors"
+                  className="flex flex-col md:grid md:grid-cols-[1fr_150px_130px_50px] gap-2 md:gap-4 md:items-center p-0 md:p-3 md:p-0 rounded-lg md:rounded-none transition-colors"
                 >
-                  <div className="md:hidden space-y-2">
-                    <div className="flex items-start justify-between gap-2">
+                  <div className="md:hidden flex flex-row justify-between space-y-2">
+                    <div className="flex flex-col items-start justify-between gap-1">
                       <span
                         className="font-[family-name:var(--font-stetica-medium)] flex-1"
                         style={{ color: "var(--text-primary)" }}
                       >
                         {doc.title}
                       </span>
-                      <a
-                        href={doc.file}
-                        download
-                        aria-label={`Скачать ${doc.title}`}
-                        className="flex-shrink-0 flex justify-center items-center hover:opacity-70 transition-opacity"
-                      >
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="var(--accent-primary)"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      <div className="flex gap-2">
+                        <span
+                          className="text-sm"
+                          style={{ color: "var(--text-secondary)" }}
                         >
-                          <path d="M12 3v12" />
-                          <path d="M7 10l5 5 5-5" />
-                          <path d="M5 21h14" />
-                        </svg>
-                      </a>
+                          {doc.uploaded_at
+                            ? new Date(doc.uploaded_at).toLocaleDateString(
+                                "ru-RU"
+                              )
+                            : "—"}
+                          , {getFileExtension(doc.file)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm" style={{ color: "var(--text-secondary)" }}>
-                      <span>
-                        {doc.uploaded_at
-                          ? new Date(doc.uploaded_at).toLocaleDateString("ru-RU")
-                          : "—"}
-                      </span>
-                      <span>{getFileExtension(doc.file)}</span>
-                    </div>
+                    <a
+                      href={doc.file}
+                      download
+                      aria-label={`Скачать ${doc.title}`}
+                      className="flex-shrink-0 flex justify-center items-center hover:opacity-70 transition-opacity"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--accent-primary)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 3v12" />
+                        <path d="M7 10l5 5 5-5" />
+                        <path d="M5 21h14" />
+                      </svg>
+                    </a>
                   </div>
 
                   <span

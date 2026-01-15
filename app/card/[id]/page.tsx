@@ -15,6 +15,7 @@ import { PlanningAccordion } from "@/app/card/[id]/lib/PlanningAccordion";
 import { DocumentsAccordion } from "@/app/card/[id]/lib/DocumentsAccordion";
 import { fetchCardById, toggleFavorite } from "@/app/shared/redux/slices/cards";
 import { DescriptionAccordion } from "@/app/card/[id]/lib/DescriptionAccordion";
+import { ReviewsAccordion } from "@/app/card/[id]/lib/ReviewsAccordion";
 import { CharacteristicsAccordion } from "@/app/card/[id]/lib/CharacteristicsAccordion";
 import {
   BackButton,
@@ -85,7 +86,7 @@ export default function CardDetailPage() {
     currentCard.list_curations || currentCard.recommendations || [];
 
   return (
-    <div className="min-h-screen p-6" style={{}}>
+    <div className="min-h-screen p-6">
       <div className="max-w-[1300px] mx-auto">
         <BackButton onClick={() => router.back()} />
       </div>
@@ -188,13 +189,13 @@ function CardBottomSection({ card }: { card: ICard }) {
   const { latitude, longitude, address } = card;
   const [isFavorite, setIsFavorite] = useState(Boolean(card.is_favorite));
 
-  // Синхронизация таба с URL при монтировании и изменении URL
   useEffect(() => {
     if (tabFromUrl && tabFromUrl !== tab) {
       setTab(tabFromUrl);
       if (tabsRef.current) {
         tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       }
+
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabFromUrl]);
@@ -249,7 +250,8 @@ function CardBottomSection({ card }: { card: ICard }) {
       )}
       {tab === "documents" && <DocumentsAccordion documents={documents} />}
       {tab === "planning" && <PlanningAccordion />}
-      {tab === "reviews" && (
+      {tab === "reviews" && <ReviewsAccordion />}
+      {/* {tab === "reviews" && (
         <div
           className="mb-4 rounded-lg p-6 text-center"
           style={{
@@ -259,7 +261,8 @@ function CardBottomSection({ card }: { card: ICard }) {
         >
           Отзывы пока отсутствуют
         </div>
-      )}
+      )} */}
+      {/* {tab === "reviews" && <ReviewsAccordion reviews={card.reviews} />} */}
       {tab === "questions" && (
         <div
           className="mb-4 rounded-lg p-6"

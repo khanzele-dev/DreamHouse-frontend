@@ -21,7 +21,7 @@ export function FieldTextRange({
 }: FieldTextRangeProps) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-[family-name:var(--font-stetica-bold)]">
+      <label className="block text-lg font-[family-name:var(--font-stetica-regular)]">
         {label}
       </label>
       <div className="flex gap-2">

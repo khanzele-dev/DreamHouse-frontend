@@ -12,11 +12,6 @@ export function useAccountActions() {
   const [message, setMessage] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const handleChangePassword = () => {
-    setMessage("Ссылка для смены пароля отправлена на вашу почту.");
-    setTimeout(() => setMessage(null), 3500);
-  };
-
   const handleLogout = () => {
     dispatch(logout());
     router.push("/");
@@ -30,7 +25,6 @@ export function useAccountActions() {
     try {
       await deleteAccount({ password }).unwrap();
       
-      // Успешное удаление - закрываем модалку, выходим и редиректим
       setIsDeleteModalOpen(false);
       dispatch(logout());
       router.replace("/");
@@ -55,7 +49,6 @@ export function useAccountActions() {
     isDeleteModalOpen,
     isDeleting,
     setIsDeleteModalOpen,
-    handleChangePassword,
     handleLogout,
     handleDeleteAccount,
     handleConfirmDelete,

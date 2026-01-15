@@ -14,7 +14,7 @@ export default function DevelopersPage() {
 
   return (
     <div
-      className="flex flex-col min-h-screen justify-start content-center items-center font-[family-name:var(--font-stetica-regular)]"
+      className="flex flex-col justify-start content-center items-center font-[family-name:var(--font-stetica-regular)]"
       style={{
         backgroundColor: "var(--bg-primary)",
         transition: "background-color 0.3s ease",

@@ -128,6 +128,7 @@ export const Search = () => {
               </div>
             )}
             {!searchLoading &&
+              Array.isArray(searchResults) &&
               searchResults.length === 0 && (
                 <div
                   className="px-4 py-2 text-sm"
@@ -137,6 +138,7 @@ export const Search = () => {
                 </div>
               )}
             {!searchLoading &&
+              Array.isArray(searchResults) &&
               searchResults.map((item) => (
                 <Link
                   key={item.id}

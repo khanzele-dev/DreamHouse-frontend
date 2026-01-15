@@ -150,7 +150,7 @@ export function PhoneInput({
             border: "1px solid",
             transition: "all 0.3s ease",
           }}
-          className="mt-2 block w-full rounded-lg px-4 py-3 focus:outline-none focus:ring-2 font-[family-name:var(--font-stetica-regular)]"
+          className="mt-2 block w-full rounded-lg px-4 py-3 focus:outline-none font-[family-name:var(--font-stetica-regular)]"
         />
         {displayValue && (
           <div

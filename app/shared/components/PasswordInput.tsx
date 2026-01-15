@@ -44,7 +44,7 @@ export function PasswordInput({
             border: "1px solid",
             transition: "all 0.3s ease",
           }}
-          className="block w-full rounded-lg px-4 py-3 pr-24 focus:outline-none focus:ring-2 font-[family-name:var(--font-stetica-regular)]"
+          className="block w-full rounded-lg px-4 py-3 pr-24 focus:outline-none font-[family-name:var(--font-stetica-regular)]"
         />
         <button
           type="button"
