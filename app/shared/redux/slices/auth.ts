@@ -74,7 +74,6 @@ const getErrorMessage = (
   return reason || "Произошла ошибка";
 };
 
-// SMS Login thunks
 export const requestSmsCode = createAsyncThunk<IRequestSmsCodeResponse, IRequestSmsCodeRequest>(
   "auth/requestSmsCode",
   async (data, { rejectWithValue }) => {

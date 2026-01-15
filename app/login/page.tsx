@@ -161,7 +161,7 @@ function LoginContent() {
       onVerifyOtp();
     }
   };
-
+  console.log(error)
   const handleBackToPhone = () => {
     setStep("phone");
     setOtp("");
@@ -294,13 +294,35 @@ function LoginContent() {
               </svg>
             </Link>
           </div>
+          <button
+            onClick={() => router.push("/")}
+            className="flex items-center gap-2 mb-6 transition-colors cursor-pointer hover:opacity-80"
+            style={{ color: "var(--accent-primary)" }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12.5 15L7.5 10L12.5 5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Назад
+          </button>
           <h4
             className="text-[30px] mb-6"
             style={{
               color: "var(--accent-primary)",
               transition: "color 0.3s ease",
             }}
-          >z
+          >
             {step === "phone" ? "Вход в личный кабинет" : "Введите код"}
           </h4>
 

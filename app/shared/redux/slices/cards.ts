@@ -21,9 +21,8 @@ export const fetchCards = createAsyncThunk<
     const { page = 1, append, q, ...restFilters } = filters || {};
 
     params.append("page", String(page));
-    params.append("page_size", "20");
+    params.append("limit", "8");
     
-    // Добавляем поисковый запрос если есть
     if (q && q.trim().length > 0) {
       params.append("q", q.trim());
     }
