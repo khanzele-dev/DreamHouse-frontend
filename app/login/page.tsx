@@ -103,7 +103,8 @@ function LoginContent() {
         setStep("otp");
         startTimer();
       }
-    } catch {
+    } catch (err) {
+      console.log(err)
     } finally {
       setRequestingCode(false);
     }
