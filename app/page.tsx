@@ -33,31 +33,13 @@ function HomeContent() {
   const { error } = useAppSelector((state) => state.cards);
   const { filters, updateFilters } = useFiltersFromUrl();
   
-  // Извлекаем q из filters для использования в VirtualizedCardList
   const { q, ...cardFilters } = filters as ICardFilters & { q?: string };
   const prevFiltersRef = useRef<ICardFilters & { q?: string }>(filters as ICardFilters & { q?: string });
   
-  // Мемоизируем сериализованную строку фильтров
   const filtersString = useMemo(() => {
     return JSON.stringify(filters);
   }, [
-    filters.city,
-    filters.category,
-    filters.house_type,
-    filters.elevator,
-    filters.parking,
-    filters.building_material,
-    filters.balcony,
-    filters.price_min,
-    filters.price_max,
-    filters.area_min,
-    filters.area_max,
-    filters.floors_min,
-    filters.floors_max,
-    filters.rooms_min,
-    filters.rooms_max,
-    // filters используется через отдельные поля для оптимизации
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    filters
   ]);
   
   useEffect(() => {

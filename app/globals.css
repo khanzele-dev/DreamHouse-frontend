@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+select,
+textarea,
+input[type="text"],
+input[type="password"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="search"],
+input[type="tel"],
+input[type="color"] {
+  font-size: 16px;
+}
+
 * {
   list-style-type: none;
 }
@@ -17,7 +36,7 @@
   --border-color: #d1d5db;
   --card-bg: #ffffff;
   --modal-bg: #ffffff;
-  --bg-button: #0000001A;
+  --bg-button: #0000001a;
 }
 
 [data-theme="dark"] {
@@ -33,7 +52,7 @@
   --border-color: #374151;
   --card-bg: #1f1f1f;
   --modal-bg: #25262a;
-  --bg-button: #FFFFFF1A;
+  --bg-button: #ffffff1a;
 }
 
 .tabs-scroll::-webkit-scrollbar {

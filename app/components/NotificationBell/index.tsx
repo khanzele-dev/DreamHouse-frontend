@@ -1,21 +1,61 @@
 "use client";
 
 import { useEffect } from "react";
-import { X, Bell } from "lucide-react";
+import { X } from "lucide-react";
 import {
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
 } from "@/app/shared/redux/api/notifications";
 
 interface NotificationBellProps {
   onClose?: () => void;
 }
 
-export function NotificationBell({ onClose }: NotificationBellProps) {
-  const { data: notifications = [], isLoading } = useGetNotificationsQuery();
-  const [markAsRead] = useMarkNotificationAsReadMutation();
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  user: number;
+}
 
-  const unreadCount = notifications?.filter((n) => !n.is_read).length;
+interface NotificationsPaginatedResponse {
+  results: Notification[];
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
+export function NotificationBell({ onClose }: NotificationBellProps) {
+  const { data: notificationsData, isLoading } = useGetNotificationsQuery();
+  const [markAsRead] = useMarkNotificationAsReadMutation();
+  const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
+
+  const notifications: Notification[] = [];
+  if (Array.isArray(notificationsData)) {
+    notifications.push(...notificationsData);
+  } else if (
+    notificationsData &&
+    typeof notificationsData === "object" &&
+    "results" in notificationsData
+  ) {
+    const paginatedData = notificationsData as NotificationsPaginatedResponse;
+    if (Array.isArray(paginatedData.results)) {
+      notifications.push(...paginatedData.results);
+    }
+  }
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  useEffect(() => {
+    if (!isLoading && notificationsData && unreadCount > 0) {
+      markAllAsRead().catch((error) => {
+        console.error("Failed to mark all notifications as read:", error);
+      });
+    }
+  }, [isLoading, notificationsData, unreadCount, markAllAsRead]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -71,14 +111,6 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
               >
                 Последние уведомления
               </h3>
-              {unreadCount > 0 && (
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {unreadCount} непрочитанных
-                </p>
-              )}
             </div>
           </div>
           <button
@@ -90,11 +122,11 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 pt-0">
           {isLoading ? (
             <div className="p-12 text-center">
               <div
-                className="inline-block w-10 h-10 border-4 border-t-transparent rounded-full"
+                className="inline-block w-10 h-10 border-4 border-t-transparent"
                 style={{
                   borderColor: "var(--accent-primary)",
                   borderTopColor: "transparent",
@@ -137,7 +169,7 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {notifications.map((notification) => (
                 <button
                   key={notification.id}
@@ -147,49 +179,56 @@ export function NotificationBell({ onClose }: NotificationBellProps) {
                       notification.is_read
                     )
                   }
-                  className="w-full text-left p-4 rounded-xl border"
+                  className="w-full text-left p-4 border-b"
                   style={{
-                    backgroundColor: notification.is_read
-                      ? "var(--card-bg)"
-                      : "var(--bg-secondary)",
                     borderColor: "var(--border-color)",
                   }}
                 >
-                  <div className="flex gap-4">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: "var(--accent-primary)" }}
-                    >
-                      <Bell className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4
-                          className="text-sm font-[family-name:var(--font-stetica-bold)]"
-                          style={{ color: "var(--text-primary)" }}
-                        >
-                          {notification.title}
-                        </h4>
-                        {!notification.is_read && (
-                          <span
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: "var(--accent-primary)" }}
-                          ></span>
-                        )}
+                  <div className="flex flex-col gap-3">
+                    {!notification.is_read && (
+                      <span
+                        className="flex justify-center content-center max-w-[80px] rounded-lg px-3 py-1"
+                        style={{
+                          backgroundColor: "var(--accent-primary)",
+                          color: "var(--card-bg)",
+                        }}
+                      >
+                        Новое
+                      </span>
+                    )}
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="w-[24px] h-[24px] rounded-full flex items-center content-center justify-center font-[family-name:var(--font-stetica-bold)]"
+                        style={{
+                          backgroundColor: "var(--accent-primary)",
+                          color: "var(--card-bg)",
+                        }}
+                      >
+                        !
+                      </span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4
+                            className="text-base font-[family-name:var(--font-stetica-medium)]"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {notification.title}
+                          </h4>
+                          <p
+                            className="text-xs"
+                            style={{ color: "var(--text-secondary)" }}
+                          >
+                            {formatTime(notification.created_at)}
+                          </p>
+                        </div>
                       </div>
-                      <p
-                        className="text-sm mb-2"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {notification.message}
-                      </p>
-                      <p
-                        className="text-xs"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {formatTime(notification.created_at)}
-                      </p>
                     </div>
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {notification.message}
+                    </p>
                   </div>
                 </button>
               ))}

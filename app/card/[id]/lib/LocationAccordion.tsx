@@ -1,18 +1,18 @@
 "use client";
 
-import Script from "next/script";
-import { useState, Suspense } from "react";
+import { MapWidget } from "@/app/card/[id]/lib/MapWidget";
+import { useState } from "react";
 
 export function LocationAccordion({
   latitude,
   longitude,
   address,
 }: {
-  latitude?: number;
-  longitude?: number;
-  address?: string;
+  latitude: number;
+  longitude: number;
+  address: string;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const isValid =
     typeof latitude === "number" &&
     typeof longitude === "number" &&
@@ -58,7 +58,7 @@ export function LocationAccordion({
         </svg>
       </summary>
       <div
-        className="w-full h-[280px] px-6 pb-6 pt-2 rounded-xl flex items-center justify-center"
+        className="w-full h-[280px] px-6 pb-6 pt-2 rounded-xl"
         style={{ backgroundColor: "rgba(var(--accent-secondary-rgb))" }}
       >
         {isValid ? (
@@ -66,45 +66,11 @@ export function LocationAccordion({
             className="w-full h-full rounded-xl overflow-hidden"
             style={{ backgroundColor: "var(--border-color)" }}
           >
-            <Suspense
-              fallback={
-                <div
-                  className="w-full h-full flex items-center justify-center"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M12 13C13.6569 13 15 11.6569 15 10C15 8.34315 13.6569 7 12 7C10.3431 7 9 8.34315 9 10C9 11.6569 10.3431 13 12 13Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-              }
-            >
-              <Script
-                src="https://api-maps.yandex.ru/v2/?apikey=c8efdf97-cb56-4062-ac67-2f5c7b9305fe&lang=en_US"
-                strategy="beforeInteractive"
-              />
-              <div style={{ width: "100svw", height: "100svh" }}>
-                {/* <Map latitude={latitude} longitude={longitude} /> */}
-              </div>
-            </Suspense>
+            <MapWidget
+              address={address}
+              latitude={latitude}
+              longitude={longitude}
+            />
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-3">

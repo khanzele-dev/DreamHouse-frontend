@@ -1,7 +1,8 @@
 import axiosInstance from "@/app/shared/config/axios";
 import { API_BASE_URL } from "@/app/shared/config/axios";
-import { IAuthSliceState } from "@/app/types/redux";
+import { IAuthSliceState, IUser } from "@/app/types/redux";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { isAxiosErrorResponse } from "@/app/shared/types/errors";
 import {
   ILoginRequest,
   ILoginResponse,
@@ -16,7 +17,6 @@ import {
   IConfirmRegisterRequest,
   IConfirmRegisterResponse,
 } from "@/app/types/requests";
-
 const getErrorMessage = (
   reason: string,
   type: "register" | "login" | "sms_request" | "sms_verify" | "register_sms" | "confirm_register"
@@ -66,14 +66,11 @@ const getErrorMessage = (
       SERVER_ERROR: "Ошибка сервера. Попробуйте позже",
     },
   };
-
   if (errorMessages[type]?.[reason]) {
     return errorMessages[type][reason];
   }
-
   return reason || "Произошла ошибка";
 };
-
 export const requestSmsCode = createAsyncThunk<IRequestSmsCodeResponse, IRequestSmsCodeRequest>(
   "auth/requestSmsCode",
   async (data, { rejectWithValue }) => {
@@ -84,18 +81,23 @@ export const requestSmsCode = createAsyncThunk<IRequestSmsCodeResponse, IRequest
       );
       return response;
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: IRequestSmsCodeResponse } };
-      return rejectWithValue(
-        axiosError.response?.data || {
-          ok: false,
-          CODE: "SMS_REQUEST_FAILED",
-          reason: "SMS_REQUEST_FAILED",
+      const defaultError: IRequestSmsCodeResponse = {
+        ok: false,
+        CODE: "SMS_REQUEST_FAILED",
+        reason: "SMS_REQUEST_FAILED",
+      };
+
+      if (isAxiosErrorResponse(error) && error.response?.data) {
+        const errorData = error.response.data;
+        if (typeof errorData === "object" && "ok" in errorData) {
+          return rejectWithValue(errorData as IRequestSmsCodeResponse);
         }
-      );
+      }
+
+      return rejectWithValue(defaultError);
     }
   }
 );
-
 export const verifySmsCode = createAsyncThunk<IVerifySmsCodeResponse, IVerifySmsCodeRequest>(
   "auth/verifySmsCode",
   async (data, { rejectWithValue }) => {
@@ -110,32 +112,32 @@ export const verifySmsCode = createAsyncThunk<IVerifySmsCodeResponse, IVerifySms
       }
       return response;
     } catch (error: unknown) {
-      const axiosError = error as { 
-        response?: { 
-          data?: IVerifySmsCodeResponse;
-          status?: number;
-        } 
+      const defaultError: IVerifySmsCodeResponse = {
+        ok: false,
+        CODE: "SERVER_ERROR",
+        reason: "SERVER_ERROR",
       };
-      
-      if (axiosError.response?.status === 400 || axiosError.response?.status === 401) {
-        return rejectWithValue({
-          ok: false,
-          CODE: "INVALID_OTP",
-          reason: "INVALID_OTP",
-        });
-      }
-      
-      return rejectWithValue(
-        axiosError.response?.data || {
-          ok: false,
-          CODE: "SMS_VERIFY_FAILED",
-          reason: "SMS_VERIFY_FAILED",
+
+      if (isAxiosErrorResponse(error)) {
+        const status = error.response?.status;
+        if (status === 400 || status === 401) {
+          return rejectWithValue({
+            ok: false,
+            CODE: "INVALID_OTP",
+            reason: "INVALID_OTP",
+          });
         }
-      );
+
+        const errorData = error.response?.data;
+        if (typeof errorData === "object" && errorData !== null && "ok" in errorData) {
+          return rejectWithValue(errorData as IVerifySmsCodeResponse);
+        }
+      }
+
+      return rejectWithValue(defaultError);
     }
   }
 );
-
 // SMS Register thunks
 export const registerSms = createAsyncThunk<IRegisterSmsResponse, IRegisterSmsRequest>(
   "auth/registerSms",
@@ -147,39 +149,48 @@ export const registerSms = createAsyncThunk<IRegisterSmsResponse, IRegisterSmsRe
       );
       return response;
     } catch (error: unknown) {
-      const axiosError = error as { 
-        response?: { 
-          data?: IRegisterSmsResponse | { phone_number?: string[] };
-          status?: number;
-        } 
+      const defaultError: IRegisterSmsResponse = {
+        ok: false,
+        CODE: "REGISTER_FAILED",
+        reason: "REGISTER_FAILED",
       };
-      
-      // Обработка ошибки существующего пользователя
-      if (axiosError.response?.data && typeof axiosError.response.data === 'object' && 'phone_number' in axiosError.response.data) {
-        const errorData = axiosError.response.data as { phone_number?: string[] };
-        if (errorData.phone_number && Array.isArray(errorData.phone_number) && errorData.phone_number.length > 0) {
-          const errorMessage = errorData.phone_number[0];
-          if (errorMessage.includes("already exists") || errorMessage.includes("уже существует")) {
-            return rejectWithValue({
-              ok: false,
-              CODE: "ALREADY_REGISTERED",
-              reason: "ALREADY_REGISTERED",
-            });
+
+      if (isAxiosErrorResponse(error)) {
+        const errorData = error.response?.data;
+
+        if (typeof errorData === "object" && errorData !== null) {
+          // Обработка ошибки существующего пользователя
+          if ("phone_number" in errorData) {
+            const phoneError = errorData as { phone_number?: string[] };
+            if (
+              Array.isArray(phoneError.phone_number) &&
+              phoneError.phone_number.length > 0
+            ) {
+              const errorMessage = phoneError.phone_number[0];
+              if (
+                errorMessage.includes("already exists") ||
+                errorMessage.includes("уже существует")
+              ) {
+                return rejectWithValue({
+                  ok: false,
+                  CODE: "ALREADY_REGISTERED",
+                  reason: "ALREADY_REGISTERED",
+                });
+              }
+            }
+          }
+
+          // Если есть поле ok, значит это стандартный ответ API
+          if ("ok" in errorData) {
+            return rejectWithValue(errorData as IRegisterSmsResponse);
           }
         }
       }
-      
-      return rejectWithValue(
-        axiosError.response?.data as IRegisterSmsResponse || {
-          ok: false,
-          CODE: "REGISTER_FAILED",
-          reason: "REGISTER_FAILED",
-        }
-      );
+
+      return rejectWithValue(defaultError);
     }
   }
 );
-
 export const confirmRegister = createAsyncThunk<IConfirmRegisterResponse, IConfirmRegisterRequest>(
   "auth/confirmRegister",
   async (data, { rejectWithValue }) => {
@@ -194,59 +205,70 @@ export const confirmRegister = createAsyncThunk<IConfirmRegisterResponse, IConfi
       }
       return response;
     } catch (error: unknown) {
-      const axiosError = error as { 
-        response?: { 
-          data?: IConfirmRegisterResponse | { phone_number?: string[]; otp?: string[] };
-          status?: number;
-        } 
+      const defaultError: IConfirmRegisterResponse = {
+        ok: false,
+        CODE: "REGISTER_FAILED",
+        reason: "REGISTER_FAILED",
       };
-      
-      // Обработка ошибки существующего пользователя
-      if (axiosError.response?.data && typeof axiosError.response.data === 'object' && 'phone_number' in axiosError.response.data) {
-        const errorData = axiosError.response.data as { phone_number?: string[] };
-        if (errorData.phone_number && Array.isArray(errorData.phone_number) && errorData.phone_number.length > 0) {
-          const errorMessage = errorData.phone_number[0];
-          if (errorMessage.includes("already exists") || errorMessage.includes("уже существует")) {
-            return rejectWithValue({
-              ok: false,
-              CODE: "ALREADY_REGISTERED",
-              reason: "ALREADY_REGISTERED",
-            });
-          }
-        }
-      }
-      
-      // Обработка ошибки OTP
-      if (axiosError.response?.data && typeof axiosError.response.data === 'object' && 'otp' in axiosError.response.data) {
-        const errorData = axiosError.response.data as { otp?: string[] };
-        if (errorData.otp && Array.isArray(errorData.otp) && errorData.otp.length > 0) {
+
+      if (isAxiosErrorResponse(error)) {
+        const status = error.response?.status;
+        const errorData = error.response?.data;
+
+        // Проверка статуса
+        if (status === 400 || status === 401) {
           return rejectWithValue({
             ok: false,
             CODE: "INVALID_OTP",
             reason: "INVALID_OTP",
           });
         }
-      }
-      
-      if (axiosError.response?.status === 400 || axiosError.response?.status === 401) {
-        return rejectWithValue({
-          ok: false,
-          CODE: "INVALID_OTP",
-          reason: "INVALID_OTP",
-        });
-      }
-      
-      return rejectWithValue(
-        axiosError.response?.data as IConfirmRegisterResponse || {
-          ok: false,
-          CODE: "CONFIRM_REGISTER_FAILED",
-          reason: "CONFIRM_REGISTER_FAILED",
+
+        if (typeof errorData === "object" && errorData !== null) {
+          // Обработка ошибки существующего пользователя
+          if ("phone_number" in errorData) {
+            const phoneError = errorData as { phone_number?: string[] };
+            if (
+              Array.isArray(phoneError.phone_number) &&
+              phoneError.phone_number.length > 0
+            ) {
+              const errorMessage = phoneError.phone_number[0];
+              if (
+                errorMessage.includes("already exists") ||
+                errorMessage.includes("уже существует")
+              ) {
+                return rejectWithValue({
+                  ok: false,
+                  CODE: "ALREADY_REGISTERED",
+                  reason: "ALREADY_REGISTERED",
+                });
+              }
+            }
+          }
+
+          // Обработка ошибки OTP
+          if ("otp" in errorData) {
+            const otpError = errorData as { otp?: string[] };
+            if (Array.isArray(otpError.otp) && otpError.otp.length > 0) {
+              return rejectWithValue({
+                ok: false,
+                CODE: "INVALID_OTP",
+                reason: "INVALID_OTP",
+              });
+            }
+          }
+
+          // Если есть поле ok, значит это стандартный ответ API
+          if ("ok" in errorData) {
+            return rejectWithValue(errorData as IConfirmRegisterResponse);
+          }
         }
-      );
+      }
+
+      return rejectWithValue(defaultError);
     }
   }
 );
-
 export const register = createAsyncThunk<IRegisterResponse, IRegisterRequest>(
   "auth/register",
   async (userData, { rejectWithValue }) => {
@@ -261,18 +283,23 @@ export const register = createAsyncThunk<IRegisterResponse, IRegisterRequest>(
       }
       return data;
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: IRegisterResponse } };
-      return rejectWithValue(
-        axiosError.response?.data || {
-          ok: false,
-          CODE: "REGISTER_FAILED",
-          reason: "Ошибка регистрации",
+      const defaultError: IRegisterResponse = {
+        ok: false,
+        CODE: "REGISTER_FAILED",
+        reason: "Ошибка регистрации",
+      };
+
+      if (isAxiosErrorResponse(error)) {
+        const errorData = error.response?.data;
+        if (typeof errorData === "object" && errorData !== null && "ok" in errorData) {
+          return rejectWithValue(errorData as IRegisterResponse);
         }
-      );
+      }
+
+      return rejectWithValue(defaultError);
     }
   }
 );
-
 export const login = createAsyncThunk<ILoginResponse, ILoginRequest>(
   "auth/login",
   async (userData, { rejectWithValue }) => {
@@ -287,13 +314,13 @@ export const login = createAsyncThunk<ILoginResponse, ILoginRequest>(
       }
       return data;
     } catch (error: unknown) {
-      const axiosError = error as { 
-        response?: { 
+      const axiosError = error as {
+        response?: {
           data?: ILoginResponse;
           status?: number;
-        } 
+        }
       };
-      
+     
       if (axiosError.response?.status === 400 || axiosError.response?.status === 401) {
         return rejectWithValue({
           ok: false,
@@ -301,7 +328,7 @@ export const login = createAsyncThunk<ILoginResponse, ILoginRequest>(
           reason: "INVALID_CREDENTIALS",
         });
       }
-      
+     
       return rejectWithValue(
         axiosError.response?.data || {
           ok: false,
@@ -312,7 +339,6 @@ export const login = createAsyncThunk<ILoginResponse, ILoginRequest>(
     }
   }
 );
-
 export const fetchUser = createAsyncThunk(
   "auth/fetchUser",
   async (_, { rejectWithValue }) => {
@@ -335,19 +361,26 @@ export const fetchUser = createAsyncThunk(
     } catch (error: unknown) {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      const axiosError = error as {
-        response?: { data?: unknown; status?: number };
-        message?: string;
-      };
-      return rejectWithValue(
-        axiosError.message ||
-          axiosError.response?.data ||
-          "Failed to fetch user"
-      );
+
+      if (isAxiosErrorResponse(error)) {
+        const errorData = error.response?.data;
+        const errorMessage = error.message;
+
+        if (typeof errorData === "string") {
+          return rejectWithValue(errorData);
+        }
+
+        if (typeof errorData === "object" && errorData !== null && "reason" in errorData) {
+          return rejectWithValue((errorData as { reason: string }).reason);
+        }
+
+        return rejectWithValue(errorMessage || "Failed to fetch user");
+      }
+
+      return rejectWithValue("Failed to fetch user");
     }
   }
 );
-
 export const authMe = createAsyncThunk(
   "auth/authMe",
   async (_, { rejectWithValue, dispatch }) => {
@@ -361,12 +394,18 @@ export const authMe = createAsyncThunk(
     } catch (error: unknown) {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
-      const axiosError = error as { response?: { data?: unknown } };
-      return rejectWithValue(axiosError.response?.data);
+
+      if (isAxiosErrorResponse(error)) {
+        const errorData = error.response?.data;
+        if (errorData !== undefined) {
+          return rejectWithValue(errorData);
+        }
+      }
+
+      return rejectWithValue("Authentication failed");
     }
   }
 );
-
 const initialState: IAuthSliceState = {
   isAuth: false,
   user: null,
@@ -374,7 +413,6 @@ const initialState: IAuthSliceState = {
   error: null,
   initialized: false,
 };
-
 const auth = createSlice({
   name: "auth",
   initialState: initialState,
@@ -393,59 +431,15 @@ const auth = createSlice({
     setInitialized(state) {
       state.initialized = true;
     },
+    setUser(state, action: { payload: IUser }) {
+      state.user = action.payload;
+      state.isAuth = true;
+      state.initialized = true;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // SMS Login
-      .addCase(requestSmsCode.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(requestSmsCode.fulfilled, (state, action) => {
-        state.loading = false;
-        if (!action.payload.ok) {
-          state.error = getErrorMessage(action.payload.reason, "sms_request");
-        } else {
-          state.error = null;
-        }
-      })
-      .addCase(requestSmsCode.rejected, (state, action) => {
-        state.loading = false;
-        const payload = action.payload as IRequestSmsCodeResponse | string;
-        if (typeof payload === "string") {
-          state.error = getErrorMessage(payload, "sms_request");
-        } else if (payload && typeof payload === "object" && "reason" in payload) {
-          state.error = getErrorMessage(payload.reason, "sms_request");
-        } else {
-          state.error = getErrorMessage("SMS_REQUEST_FAILED", "sms_request");
-        }
-      })
-      .addCase(verifySmsCode.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(verifySmsCode.fulfilled, (state, action) => {
-        state.loading = false;
-        if (action.payload.access && action.payload.refresh) {
-          state.isAuth = true;
-          state.initialized = true;
-          state.error = null;
-        } else {
-          state.error = getErrorMessage(action.payload.reason || "SMS_VERIFY_FAILED", "sms_verify");
-        }
-      })
-      .addCase(verifySmsCode.rejected, (state, action) => {
-        state.loading = false;
-        const payload = action.payload as IVerifySmsCodeResponse | string;
-        if (typeof payload === "string") {
-          state.error = getErrorMessage(payload, "sms_verify");
-        } else if (payload && typeof payload === "object" && "reason" in payload) {
-          state.error = getErrorMessage(payload.reason, "sms_verify");
-        } else {
-          state.error = getErrorMessage("SMS_VERIFY_FAILED", "sms_verify");
-        }
-      })
-      // SMS Register
       .addCase(registerSms.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -585,6 +579,5 @@ const auth = createSlice({
       });
   },
 });
-
-export const { logout, clearError, setInitialized } = auth.actions;
+export const { logout, clearError, setInitialized, setUser } = auth.actions;
 export default auth.reducer;

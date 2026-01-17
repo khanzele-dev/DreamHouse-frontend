@@ -246,36 +246,6 @@ export function AccountSection({
           />
         </div>
 
-        <div>
-          <label
-            className="block text-sm font-[family-name:var(--font-stetica-bold)] mb-2"
-            style={{
-              color: "var(--text-primary)",
-              transition: "color 0.3s ease",
-            }}
-          >
-            Пароль
-          </label>
-          <div className="relative">
-            <input
-              type="password"
-              value={profile.password}
-              disabled
-              readOnly
-              className="rounded-xl px-4 py-3 pr-12 focus:outline-none cursor-not-allowed"
-              style={{
-                border: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-secondary)",
-                color: "var(--text-primary)",
-                transition: "all 0.3s ease",
-                width: "500px",
-                maxWidth: "100%",
-                opacity: "0.6",
-              }}
-            />
-          </div>
-        </div>
-
         <div className="flex flex-col space-y-4">
           <button
             onClick={onLogout}

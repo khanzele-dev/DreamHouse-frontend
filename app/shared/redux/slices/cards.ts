@@ -141,26 +141,118 @@ export const searchCards = createAsyncThunk<
   }
 });
 
-export const fetchFavoriteCards = createAsyncThunk<ICard[]>(
+interface FavoriteCardItem {
+  id: number;
+  card: ICard;
+}
+
+interface FavoriteCardsResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: FavoriteCardItem[];
+}
+
+export const fetchFavoriteCards = createAsyncThunk<
+  ICard[],
+  number | undefined
+>(
   "cards/fetchFavoriteCards",
-  async (_, { rejectWithValue }) => {
+  async (page = 1, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("access_token");
       if (!token) {
         return rejectWithValue("Необходима авторизация");
       }
-      const { data } = await axiosInstance.get<
-        Array<{ id: number; card: ICard }>
-      >(`${API_BASE_URL}/cards/favorites/me/`);
-      return data.map((item) => item.card);
+
+      const params = new URLSearchParams();
+      params.append("page", String(page));
+
+      const { data } = await axiosInstance.get<FavoriteCardsResponse>(
+        `${API_BASE_URL}/cards/favorites/me/?${params.toString()}`
+      );
+
+      // Извлекаем card из каждого элемента results
+      if (data && typeof data === "object" && "results" in data) {
+        if (Array.isArray(data.results)) {
+          return data.results.map((item) => item.card);
+        }
+      }
+
+      return [];
     } catch (error: unknown) {
       const axiosError = error as {
-        response?: { data?: unknown };
+        response?: {
+          data?: { detail?: string; message?: string };
+          status?: number;
+        };
         message?: string;
       };
-      return rejectWithValue(
-        axiosError.message || "Не удалось загрузить избранные карточки"
+
+      let errorMessage = "Не удалось загрузить избранные карточки";
+
+      if (axiosError.response?.data?.detail) {
+        errorMessage = axiosError.response.data.detail;
+      } else if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message;
+      } else if (axiosError.message) {
+        errorMessage = axiosError.message;
+      }
+
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const fetchRecentViews = createAsyncThunk<
+  ICard[],
+  { page?: number; limit?: number } | undefined
+>(
+  "cards/fetchRecentViews",
+  async (params = { page: 1, limit: 8 }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        return rejectWithValue("Необходима авторизация");
+      }
+
+      const searchParams = new URLSearchParams();
+      if (params.page !== undefined) {
+        searchParams.append("page", String(params.page));
+      }
+      if (params.limit !== undefined) {
+        searchParams.append("limit", String(params.limit));
+      }
+
+      const { data } = await axiosInstance.get<FetchCardsResponse>(
+        `${API_BASE_URL}/cards/recent-views/?${searchParams.toString()}`
       );
+
+      if (data && typeof data === "object" && "results" in data) {
+        return Array.isArray(data.results) ? data.results : [];
+      }
+
+      return [];
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: {
+          data?: { detail?: string; message?: string };
+          status?: number;
+        };
+        message?: string;
+      };
+
+      let errorMessage = "Не удалось загрузить недавно просмотренные";
+
+      if (axiosError.response?.data?.detail) {
+        errorMessage = axiosError.response.data.detail;
+      } else if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message;
+      } else if (axiosError.message) {
+        errorMessage = axiosError.message;
+      }
+
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -195,8 +287,10 @@ const initialState: ICardsSliceState = {
   cards: [],
   currentCard: null,
   searchResults: [],
+  recentViews: [],
   loading: true,
   searchLoading: true,
+  recentViewsLoading: false,
   error: null,
   isFavoritesPage: false,
   hasMore: true,
@@ -333,6 +427,24 @@ const cards = createSlice({
         if (cardInSearch) {
           cardInSearch.is_favorite = is_favorite;
         }
+
+        const cardInRecentViews = state.recentViews.find((card) => card.id === id);
+        if (cardInRecentViews) {
+          cardInRecentViews.is_favorite = is_favorite;
+        }
+      })
+      .addCase(fetchRecentViews.pending, (state) => {
+        state.recentViewsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchRecentViews.fulfilled, (state, action) => {
+        state.recentViewsLoading = false;
+        state.recentViews = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchRecentViews.rejected, (state, action) => {
+        state.recentViewsLoading = false;
+        state.error = (action.payload as string) || "Не удалось загрузить недавно просмотренные";
       });
   },
 });

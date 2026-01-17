@@ -20,8 +20,10 @@ export interface ICardsSliceState {
     cards: ICard[];
     currentCard: ICard | null;
     searchResults: ICard[];
+    recentViews: ICard[];
     loading: boolean;
     searchLoading: boolean;
+    recentViewsLoading: boolean;
     error: string | null;
     isFavoritesPage: boolean;
     hasMore: boolean;

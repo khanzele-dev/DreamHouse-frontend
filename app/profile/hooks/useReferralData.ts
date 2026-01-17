@@ -7,6 +7,17 @@ interface Referral {
   created_at: string;
 }
 
+interface ReferralLinkResponse {
+  referral_link: string;
+}
+
+interface ReferralsResponse {
+  results?: Referral[];
+  count?: number;
+  next?: string | null;
+  previous?: string | null;
+}
+
 export function useReferralData(activeSection: string, isAuth: boolean) {
   const [referralLink, setReferralLink] = useState<string>("");
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -23,13 +34,34 @@ export function useReferralData(activeSection: string, isAuth: boolean) {
     setLoadingReferral(true);
     try {
       const [linkResponse, referralsResponse] = await Promise.all([
-        config.get("/users/referral-link/"),
-        config.get("/users/referrals/"),
+        config.get<ReferralLinkResponse>("/users/referral-link/"),
+        config.get<ReferralsResponse | Referral[]>("/users/referrals/"),
       ]);
-      setReferralLink(linkResponse.data.referral_link || "");
-      setReferrals(referralsResponse.data || []);
+
+      // Обрабатываем реферальную ссылку
+      const link = linkResponse.data?.referral_link || "";
+      setReferralLink(link);
+
+      // Обрабатываем рефералов (массив или объект с пагинацией)
+      let referralsData: Referral[] = [];
+      const referralsDataRaw = referralsResponse.data;
+
+      if (Array.isArray(referralsDataRaw)) {
+        referralsData = referralsDataRaw;
+      } else if (
+        referralsDataRaw &&
+        typeof referralsDataRaw === "object" &&
+        "results" in referralsDataRaw &&
+        Array.isArray(referralsDataRaw.results)
+      ) {
+        referralsData = referralsDataRaw.results;
+      }
+
+      setReferrals(referralsData);
     } catch (error) {
       console.error("Ошибка при загрузке реферальных данных:", error);
+      setReferrals([]);
+      setReferralLink("");
     } finally {
       setLoadingReferral(false);
     }

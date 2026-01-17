@@ -173,25 +173,8 @@ export function useFiltersFromUrl() {
     [pathname, router]
   );
 
-  // Мемоизируем filters для стабильной ссылки
   const memoizedFilters = useMemo(() => filters, [
-    filters.city,
-    filters.category,
-    filters.house_type,
-    filters.elevator,
-    filters.parking,
-    filters.building_material,
-    filters.balcony,
-    filters.price_min,
-    filters.price_max,
-    filters.area_min,
-    filters.area_max,
-    filters.floors_min,
-    filters.floors_max,
-    filters.rooms_min,
-    filters.rooms_max,
-    // filters используется через отдельные поля для оптимизации
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    filters
   ]);
 
   return { filters: memoizedFilters, updateFilters };

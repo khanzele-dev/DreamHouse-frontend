@@ -5,31 +5,31 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IRegisterForm } from "@/app/types";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { useAppDispatch, useAppSelector } from "@/app/shared/redux/hooks";
-import {
-  registerSms,
-  confirmRegister,
-  clearError,
-  fetchUser,
-} from "@/app/shared/redux/slices/auth";
+import { useAppDispatch } from "@/app/shared/redux/hooks";
+import { setUser, fetchUser } from "@/app/shared/redux/slices/auth";
 import PublicRoute from "@/app/components/PublicRoute";
 import { useTheme } from "@/app/shared/contexts/ThemeContext";
 import { useOtpTimer } from "@/app/shared/hooks/useOtpTimer";
 import { OtpInput } from "@/app/shared/components/OtpInput";
+import { requestRegisterSms, confirmRegisterSms } from "./lib/api";
+import { normalizePhone, formatPhone } from "./lib/utils";
+import { getErrorMessage } from "@/app/shared/types/errors";
 
 function RegisterContent() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const [step, setStep] = useState<"info" | "otp">("info");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [name, setName] = useState("");
   const [otp, setOtp] = useState("");
   const [requestingCode, setRequestingCode] = useState(false);
-  
+
   const refCode = searchParams.get("ref_code") || undefined;
 
   const { seconds, canResend, start: startTimer, reset: resetTimer } = useOtpTimer({
@@ -43,67 +43,28 @@ function RegisterContent() {
     setValue,
   } = useForm<IRegisterForm>();
 
-
-  const normalizePhone = (phone: string): string => {
-    let phoneDigits = phone.replace(/\D/g, "");
-    if (phoneDigits.startsWith("7")) {
-      phoneDigits = "8" + phoneDigits.slice(1);
-    }
-    return phoneDigits;
-  };
-
-  const formatPhone = (value: string): string => {
-    const numbers = value.replace(/\D/g, "");
-    let formatted = numbers;
-
-    if (formatted.startsWith("8")) {
-      formatted = "7" + formatted.slice(1);
-    }
-    if (!formatted.startsWith("7") && formatted.length > 0) {
-      formatted = "7" + formatted;
-    }
-
-    formatted = formatted.slice(0, 11);
-
-    let result = "";
-    if (formatted.length === 0) result = "";
-    else if (formatted.length === 1) result = `+${formatted}`;
-    else if (formatted.length <= 4)
-      result = `+${formatted[0]} (${formatted.slice(1)}`;
-    else if (formatted.length <= 7) {
-      result = `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(4)}`;
-    } else if (formatted.length <= 9) {
-      result = `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(4, 7)}-${formatted.slice(7)}`;
-    } else {
-      result = `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(4, 7)}-${formatted.slice(7, 9)}-${formatted.slice(9, 11)}`;
-    }
-
-    return result;
-  };
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const onRequestCode: SubmitHandler<IRegisterForm> = async (data) => {
-    dispatch(clearError());
+    setError(null);
     setSuccessMessage(null);
     setRequestingCode(true);
 
     try {
       const normalizedPhone = normalizePhone(data.phone_number);
-      const result = await dispatch(
-        registerSms({
-          phone_number: normalizedPhone,
-          name: data.name.trim(),
-          ref_code: refCode,
-        })
-      ).unwrap();
+      const res = await requestRegisterSms(normalizedPhone);
 
-      if (result.ok) {
+      if (res.detail || res.ok) {
         setPhoneNumber(normalizedPhone);
         setName(data.name.trim());
         setStep("otp");
         startTimer();
       }
-    } catch (error) {
-      console.error("Registration error:", error);
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, "Ошибка отправки SMS");
+      setError(errorMessage);
     } finally {
       setRequestingCode(false);
     }
@@ -114,58 +75,57 @@ function RegisterContent() {
       return;
     }
 
-    dispatch(clearError());
+    setLoading(true);
+    setError(null);
     setSuccessMessage(null);
 
     try {
-      const result = await dispatch(
-        confirmRegister({
-          phone_number: phoneNumber,
-          otp: otp,
-          name: name,
-          ref_code: refCode,
-        })
-      ).unwrap();
+      const res = await confirmRegisterSms({
+        phone_number: phoneNumber,
+        otp: otp,
+        name: name,
+        ref_code: refCode,
+      });
 
-      if (result.access && result.refresh) {
-        await dispatch(fetchUser()).unwrap();
-        setSuccessMessage("Регистрация успешна! Перенаправляем на главную...");
-        setTimeout(() => router.push("/"), 1500);
+      localStorage.setItem("access_token", res.access);
+      localStorage.setItem("refresh_token", res.refresh);
+
+      if (res.user) {
+        dispatch(setUser(res.user));
+      } else {
+        await dispatch(fetchUser());
       }
-    } catch (error) {
-      console.error("Confirm registration error:", error);
+
+      router.push("/");
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, "Ошибка верификации кода");
+      setError(errorMessage);
       setOtp("");
+    } finally {
+      setLoading(false);
     }
   };
   const handleResendCode = async () => {
-    dispatch(clearError());
+    setError(null);
     setRequestingCode(true);
     setOtp("");
 
     try {
-      const result = await dispatch(
-        registerSms({
-          phone_number: phoneNumber,
-          name: name,
-          ref_code: refCode,
-        })
-      ).unwrap();
-
-      if (result.ok) {
+      const res = await requestRegisterSms(phoneNumber);
+      if (res.detail || res.ok) {
         startTimer();
-        setRequestingCode(false);
-      } else {
-        setRequestingCode(false);
       }
-    } catch (error) {
-      console.error(error)
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, "Ошибка повторной отправки SMS");
+      setError(errorMessage);
+    } finally {
       setRequestingCode(false);
     }
   };
 
   const handleOtpChange = (value: string) => {
     setOtp(value);
-    dispatch(clearError());
+    setError(null);
     if (value.length === 6) {
       onConfirmRegister();
     }
@@ -175,14 +135,8 @@ function RegisterContent() {
     setStep("info");
     setOtp("");
     resetTimer();
-    dispatch(clearError());
+    setError(null);
   };
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearError());
-    };
-  }, [dispatch]);
 
   const isDark = theme === "dark";
 
@@ -194,38 +148,40 @@ function RegisterContent() {
         transition: "background-color 0.3s ease",
       }}
     >
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
-        <svg
-          width="34"
-          height="18"
-          className="w-[34px] h-[18px] flex-shrink-0 cursor-pointer transition-all duration-300"
-          viewBox="0 0 34 18"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          onClick={toggleTheme}
-          style={{ cursor: "pointer" }}
-        >
-          <rect
-            x="0.5"
-            y="1"
-            width="33"
-            height="16"
-            rx="8"
-            stroke="var(--text-primary)"
-            style={{ transition: "stroke 0.3s ease" }}
-          />
-          <circle
-            cx={theme === "dark" ? "24.5" : "9.5"}
-            cy="9"
-            r="5"
-            fill="var(--text-primary)"
-            stroke="var(--text-primary)"
-            style={{
-              transition: "cx 0.3s ease, fill 0.3s ease, stroke 0.3s ease",
-            }}
-          />
-        </svg>
-      </div>
+      {mounted && (
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
+          <svg
+            width="34"
+            height="18"
+            className="w-[34px] h-[18px] flex-shrink-0 cursor-pointer transition-all duration-300"
+            viewBox="0 0 34 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            onClick={toggleTheme}
+            style={{ cursor: "pointer" }}
+          >
+            <rect
+              x="0.5"
+              y="1"
+              width="33"
+              height="16"
+              rx="8"
+              stroke="var(--border-color)"
+              style={{ transition: "stroke 0.3s ease" }}
+            />
+            <circle
+              cx={theme === "dark" ? "24.5" : "9.5"}
+              cy="9"
+              r="5"
+              fill="var(--bg-primary)"
+              stroke="var(--accent-primary)"
+              style={{
+                transition: "cx 0.3s ease, fill 0.3s ease, stroke 0.3s ease",
+              }}
+            />
+          </svg>
+        </div>
+      )}
       <div
         className="flex flex-1 justify-center lg:content-center lg:justify-start items-center px-6 sm:px-12 md:px-16 lg:pl-18 lg:pr-20"
         style={{

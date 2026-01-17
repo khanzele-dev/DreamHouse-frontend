@@ -7,17 +7,19 @@ import { useAppDispatch, useAppSelector } from "@/app/shared/redux/hooks";
 import {
   searchCards,
   clearSearchResults,
+  fetchRecentViews,
 } from "@/app/shared/redux/slices/cards";
 
 export const Search = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
-  const { searchResults, searchLoading } = useAppSelector(
+  const { searchResults, searchLoading, recentViews, recentViewsLoading } = useAppSelector(
     (state) => state.cards
   );
 
   const [query, setQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const [showRecentViews, setShowRecentViews] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -26,6 +28,7 @@ export const Search = () => {
         !searchRef.current.contains(event.target as Node)
       ) {
         setShowResults(false);
+        setShowRecentViews(false);
       }
     };
 
@@ -35,6 +38,15 @@ export const Search = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (showRecentViews && query.trim().length === 0 && (!recentViews || recentViews.length === 0) && !recentViewsLoading) {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        dispatch(fetchRecentViews({ limit: 8, page: 1 }));
+      }
+    }
+  }, [showRecentViews, query, recentViews, recentViewsLoading, dispatch]);
 
   const debouncedSearch = useRef(
     debounce((q: string) => {
@@ -68,7 +80,15 @@ export const Search = () => {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setShowResults(true);
+            setShowResults(e.target.value.trim().length > 0);
+            setShowRecentViews(e.target.value.trim().length === 0);
+          }}
+          onFocus={() => {
+            if (query.trim().length === 0) {
+              setShowRecentViews(true);
+            } else {
+              setShowResults(true);
+            }
           }}
           placeholder="Искать квартиры в Dream House"
           className="w-full px-4 py-[9px] rounded-l-md focus:outline-none text-sm sm:text-base"
@@ -89,6 +109,7 @@ export const Search = () => {
               setQuery("");
               dispatch(clearSearchResults());
               setShowResults(false);
+              setShowRecentViews(true);
             }}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
             aria-label="Очистить поиск"
@@ -111,6 +132,89 @@ export const Search = () => {
           </button>
         )}
 
+        {showRecentViews && query.trim().length === 0 && (
+          <div
+            className="absolute left-0 right-0 top-full mt-2 max-h-64 overflow-auto rounded-md shadow-lg z-50"
+            style={{
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-color)",
+              minHeight: "auto",
+            }}
+          >
+            {recentViewsLoading ? (
+              <div
+                className="px-4 py-3 text-sm"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Загрузка...
+              </div>
+            ) : Array.isArray(recentViews) && recentViews.length > 0 ? (
+              <>
+                <div
+                  className="px-4 py-2 text-xs font-medium border-b sticky top-0"
+                  style={{
+                    color: "var(--text-secondary)",
+                    borderColor: "var(--border-color)",
+                    backgroundColor: "var(--card-bg)",
+                  }}
+                >
+                  Недавно просмотренные
+                </div>
+                {recentViews.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/card/${item.id}`}
+                    className="block px-4 py-2 text-sm transition-colors cursor-pointer border-b last:border-b-0"
+                    style={{
+                      color: "var(--text-primary)",
+                      backgroundColor: "transparent",
+                      borderColor: "var(--border-color)",
+                      transition: "background-color 0.2s ease",
+                    }}
+                    onClick={() => {
+                      setShowRecentViews(false);
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
+                  >
+                    <div className="font-medium">{item.title}</div>
+                    {item.address && (
+                      <div
+                        className="text-xs flex items-center gap-1 mt-1"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        <svg
+                          className="w-3 h-3 flex-shrink-0"
+                          viewBox="0 0 12 14"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M6 0C2.68629 0 0 2.68629 0 6C0 9.31371 6 14 6 14C6 14 12 9.31371 12 6C12 2.68629 9.31371 0 6 0ZM6 8C4.89543 8 4 7.10457 4 6C4 4.89543 4.89543 4 6 4C7.10457 4 8 4.89543 8 6C8 7.10457 7.10457 8 6 8Z"
+                            fill="var(--text-secondary)"
+                            style={{ transition: "fill 0.3s ease" }}
+                          />
+                        </svg>
+                        {item.address}
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </>
+            ) : (
+              <div
+                className="px-4 py-3 text-sm"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Нет недавно просмотренных
+              </div>
+            )}
+          </div>
+        )}
         {showResults && query.trim().length > 0 && (
           <div
             className="absolute left-0 right-0 mt-2 max-h-64 overflow-auto rounded-md shadow-lg z-50"

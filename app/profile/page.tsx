@@ -25,7 +25,7 @@ function ProfileContent() {
 
   return (
     <div
-      className="min-h-screen font-[family-name:var(--font-stetica-regular)]"
+      className="font-[family-name:var(--font-stetica-regular)]"
       style={{
         backgroundColor: "var(--bg-primary)",
         transition: "background-color 0.3s ease",

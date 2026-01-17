@@ -1,32 +1,31 @@
 "use client";
-
 import Link from "next/link";
 import PublicRoute from "@/app/components/PublicRoute";
-import { ILoginForm } from "@/app/types";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SubmitHandler, useForm } from "react-hook-form";
 import { useTheme } from "@/app/shared/contexts/ThemeContext";
-import { useAppDispatch, useAppSelector } from "@/app/shared/redux/hooks";
-import {
-  requestSmsCode,
-  verifySmsCode,
-  clearError,
-  fetchUser,
-} from "@/app/shared/redux/slices/auth";
 import { useOtpTimer } from "@/app/shared/hooks/useOtpTimer";
 import { OtpInput } from "@/app/shared/components/OtpInput";
+import { requestSms, verifySms } from "./lib/api";
+import { normalizePhone, formatPhone } from "./lib/utils";
+import { useAppDispatch } from "@/app/shared/redux/hooks";
+import { setUser, fetchUser } from "@/app/shared/redux/slices/auth";
+import { getErrorMessage } from "@/app/shared/types/errors";
 
 function LoginContent() {
-  const dispatch = useAppDispatch();
   const router = useRouter();
-  const { loading, error } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [requestingCode, setRequestingCode] = useState(false);
-
   const {
     seconds,
     canResend,
@@ -35,146 +34,82 @@ function LoginContent() {
   } = useOtpTimer({
     initialSeconds: 60,
   });
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-  } = useForm<ILoginForm>();
-
-  const normalizePhone = (phone: string): string => {
-    let phoneDigits = phone.replace(/\D/g, "");
-    if (phoneDigits.startsWith("7")) {
-      phoneDigits = "8" + phoneDigits.slice(1);
-    }
-    return phoneDigits;
-  };
-
-  const formatPhone = (value: string): string => {
-    const numbers = value.replace(/\D/g, "");
-    let formatted = numbers;
-
-    if (formatted.startsWith("8")) {
-      formatted = "7" + formatted.slice(1);
-    }
-    if (!formatted.startsWith("7") && formatted.length > 0) {
-      formatted = "7" + formatted;
-    }
-
-    formatted = formatted.slice(0, 11);
-
-    let result = "";
-    if (formatted.length === 0) result = "";
-    else if (formatted.length === 1) result = `+${formatted}`;
-    else if (formatted.length <= 4)
-      result = `+${formatted[0]} (${formatted.slice(1)}`;
-    else if (formatted.length <= 7) {
-      result = `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(
-        4
-      )}`;
-    } else if (formatted.length <= 9) {
-      result = `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(
-        4,
-        7
-      )}-${formatted.slice(7)}`;
-    } else {
-      result = `+${formatted[0]} (${formatted.slice(1, 4)}) ${formatted.slice(
-        4,
-        7
-      )}-${formatted.slice(7, 9)}-${formatted.slice(9, 11)}`;
-    }
-
-    return result;
-  };
-
-  const onRequestCode: SubmitHandler<ILoginForm> = async (data) => {
-    dispatch(clearError());
+  const [phoneInput, setPhoneInput] = useState("");
+  const onRequestCode = async (phone: string) => {
+    setError(null);
     setRequestingCode(true);
 
     try {
-      const normalizedPhone = normalizePhone(data.phone_number);
-      const result = await dispatch(
-        requestSmsCode({ phone_number: normalizedPhone })
-      ).unwrap();
+      const normalizedPhone = normalizePhone(phone);
+      const res = await requestSms(normalizedPhone);
 
-      if (result.ok) {
+      if (res.detail) {
         setPhoneNumber(normalizedPhone);
         setStep("otp");
         startTimer();
       }
-    } catch (err) {
-      console.log(err)
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, "Ошибка отправки SMS");
+      setError(errorMessage);
     } finally {
       setRequestingCode(false);
     }
   };
 
   const onVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      return;
-    }
-
-    dispatch(clearError());
-
+    if (otp.length !== 6) return;
+    setLoading(true);
+    setError(null);
     try {
-      const result = await dispatch(
-        verifySmsCode({
-          phone_number: phoneNumber,
-          otp: otp,
-        })
-      ).unwrap();
-
-      if (result.access && result.refresh) {
-        await dispatch(fetchUser()).unwrap();
-        router.push("/");
+      const res = await verifySms(phoneNumber, otp);
+      localStorage.setItem("access_token", res.access);
+      localStorage.setItem("refresh_token", res.refresh);
+      if (res.user) {
+        dispatch(setUser(res.user));
+      } else {
+        await dispatch(fetchUser());
       }
-    } catch {
+      router.push("/");
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, "Ошибка верификации кода");
+      setError(errorMessage);
       setOtp("");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleResendCode = async () => {
-    dispatch(clearError());
+    setError(null);
     setRequestingCode(true);
     setOtp("");
 
     try {
-      const result = await dispatch(
-        requestSmsCode({ phone_number: phoneNumber })
-      ).unwrap();
-
-      if (result.ok) {
+      const res = await requestSms(phoneNumber);
+      if (res.detail) {
         startTimer();
-        setRequestingCode(false);
-      } else {
-        setRequestingCode(false);
       }
-    } catch {
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, "Ошибка повторной отправки SMS");
+      setError(errorMessage);
+    } finally {
       setRequestingCode(false);
     }
   };
 
   const handleOtpChange = (value: string) => {
     setOtp(value);
-    dispatch(clearError());
+    setError(null);
     if (value.length === 6) {
       onVerifyOtp();
     }
   };
-  console.log(error)
   const handleBackToPhone = () => {
     setStep("phone");
     setOtp("");
     resetTimer();
-    dispatch(clearError());
+    setError(null);
   };
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearError());
-    };
-  }, [dispatch]);
 
   return (
     <div
@@ -184,39 +119,40 @@ function LoginContent() {
         transition: "background-color 0.3s ease",
       }}
     >
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
-        <svg
-          width="34"
-          height="18"
-          className="w-[34px] h-[18px] flex-shrink-0 cursor-pointer transition-all duration-300"
-          viewBox="0 0 34 18"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          onClick={toggleTheme}
-          style={{ cursor: "pointer" }}
-        >
-          <rect
-            x="0.5"
-            y="1"
-            width="33"
-            height="16"
-            rx="8"
-            stroke="var(--border-color)"
-            style={{ transition: "stroke 0.3s ease" }}
-          />
-          <circle
-            cx={theme === "dark" ? "24.5" : "9.5"}
-            cy="9"
-            r="5"
-            fill="var(--bg-primary)"
-            stroke="var(--accent-primary)"
-            style={{
-              transition: "cx 0.3s ease, fill 0.3s ease, stroke 0.3s ease",
-            }}
-          />
-        </svg>
-      </div>
-
+      {mounted && (
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
+          <svg
+            width="34"
+            height="18"
+            className="w-[34px] h-[18px] flex-shrink-0 cursor-pointer transition-all duration-300"
+            viewBox="0 0 34 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            onClick={toggleTheme}
+            style={{ cursor: "pointer" }}
+          >
+            <rect
+              x="0.5"
+              y="1"
+              width="33"
+              height="16"
+              rx="8"
+              stroke="var(--border-color)"
+              style={{ transition: "stroke 0.3s ease" }}
+            />
+            <circle
+              cx={theme === "dark" ? "24.5" : "9.5"}
+              cy="9"
+              r="5"
+              fill="var(--bg-primary)"
+              stroke="var(--accent-primary)"
+              style={{
+                transition: "cx 0.3s ease, fill 0.3s ease, stroke 0.3s ease",
+              }}
+            />
+          </svg>
+        </div>
+      )}
       <div
         className="flex flex-1 justify-center content-center items-center px-6 sm:px-12 md:px-16 lg:pl-18 lg:pr-20"
         style={{
@@ -326,7 +262,6 @@ function LoginContent() {
           >
             {step === "phone" ? "Вход в личный кабинет" : "Введите код"}
           </h4>
-
           {error && (
             <div
               className="mb-4 p-3 rounded-lg"
@@ -341,9 +276,18 @@ function LoginContent() {
               {typeof error === "string" ? error : "Произошла ошибка"}
             </div>
           )}
-
           {step === "phone" ? (
-            <form onSubmit={handleSubmit(onRequestCode)} className="space-y-5">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const numbers = phoneInput.replace(/\D/g, "");
+                if (numbers.length >= 11) {
+                  onRequestCode(phoneInput);
+                }
+              }}
+              className="space-y-5"
+            >
               <label className="block">
                 <span
                   className="text-[20px]"
@@ -355,16 +299,8 @@ function LoginContent() {
                   Номер телефона
                 </span>
                 <input
-                  {...register("phone_number", {
-                    required: "Это поле является обязательным",
-                    validate: (value) => {
-                      const numbers = value.replace(/\D/g, "");
-                      if (numbers.length < 11) {
-                        return "Введите корректный номер телефона";
-                      }
-                      return true;
-                    },
-                  })}
+                  name="phone_number"
+                  value={phoneInput}
                   placeholder="+7 (___) ___-__-__"
                   className="font-[family-name:var(--font-stetica-regular)] mt-2 block w-full rounded-lg px-4 py-3 focus:outline-none"
                   style={{
@@ -379,18 +315,10 @@ function LoginContent() {
                   autoComplete="tel"
                   onChange={(e) => {
                     const formatted = formatPhone(e.target.value);
-                    setValue("phone_number", formatted, {
-                      shouldValidate: true,
-                    });
+                    setPhoneInput(formatted);
                   }}
                 />
-                {errors.phone_number && (
-                  <span className="text-red-500 text-sm">
-                    {errors.phone_number.message}
-                  </span>
-                )}
               </label>
-
               <div className="w-full">
                 <button
                   type="submit"
@@ -405,7 +333,6 @@ function LoginContent() {
                   {requestingCode || loading ? "Отправка..." : "Отправить"}
                 </button>
               </div>
-
               <p
                 className="text-center cursor-pointer font-[family-name:var(--font-stetica-regular)]"
                 style={{
@@ -438,7 +365,6 @@ function LoginContent() {
                   {formatPhone(phoneNumber)}
                 </p>
               </div>
-
               <div>
                 <OtpInput
                   value={otp}
@@ -448,13 +374,7 @@ function LoginContent() {
                   error={!!error && error.includes("код")}
                   className="mb-4"
                 />
-                {errors.otp && (
-                  <span className="text-red-500 text-sm block text-center mt-2">
-                    {errors.otp.message}
-                  </span>
-                )}
               </div>
-
               <div className="w-full">
                 <button
                   type="button"
@@ -470,7 +390,6 @@ function LoginContent() {
                   {loading ? "Вход..." : "Войти"}
                 </button>
               </div>
-
               <div className="flex flex-col items-center gap-3">
                 {canResend ? (
                   <button
@@ -498,7 +417,6 @@ function LoginContent() {
                     {(seconds % 60).toString().padStart(2, "0")}
                   </p>
                 )}
-
                 <button
                   type="button"
                   onClick={handleBackToPhone}
@@ -557,7 +475,6 @@ function LoginContent() {
     </div>
   );
 }
-
 export default function Login() {
   return (
     <PublicRoute>

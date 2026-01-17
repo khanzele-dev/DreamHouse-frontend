@@ -86,7 +86,7 @@ export default function CardDetailPage() {
     currentCard.list_curations || currentCard.recommendations || [];
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-3">
       <div className="max-w-[1300px] mx-auto">
         <BackButton onClick={() => router.back()} />
       </div>
@@ -251,18 +251,6 @@ function CardBottomSection({ card }: { card: ICard }) {
       {tab === "documents" && <DocumentsAccordion documents={documents} />}
       {tab === "planning" && <PlanningAccordion />}
       {tab === "reviews" && <ReviewsAccordion />}
-      {/* {tab === "reviews" && (
-        <div
-          className="mb-4 rounded-lg p-6 text-center"
-          style={{
-            backgroundColor: "rgba(var(--accent-secondary-rgb))",
-            color: "var(--text-secondary)",
-          }}
-        >
-          Отзывы пока отсутствуют
-        </div>
-      )} */}
-      {/* {tab === "reviews" && <ReviewsAccordion reviews={card.reviews} />} */}
       {tab === "questions" && (
         <div
           className="mb-4 rounded-lg p-6"

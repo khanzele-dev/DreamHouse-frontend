@@ -38,8 +38,6 @@ export function OtpInput({
     } else {
       setOtp(new Array(length).fill(""));
     }
-    // value и length достаточно для синхронизации
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, length]);
 
   const handleChange = (element: HTMLInputElement, index: number) => {

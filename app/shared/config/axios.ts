@@ -92,14 +92,20 @@ config.interceptors.response.use(
       }
 
       try {
-        const response = await axios.post(
-          "https://api.dreamhouse05.com/api/token/refresh/",
-          { refresh: refreshToken }
+        // Используем прямой axios.post, чтобы избежать перехвата interceptor'ом
+        const response = await axios.post<{ access: string }>(
+          `${API_BASE_URL}/token/refresh/`,
+          { refresh: refreshToken },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         );
 
         const { access } = response.data;
 
-        if (access) {
+        if (access && typeof access === "string") {
           localStorage.setItem("access_token", access);
           config.defaults.headers.common["Authorization"] = `Bearer ${access}`;
           originalRequest.headers.Authorization = `Bearer ${access}`;
@@ -115,12 +121,20 @@ config.interceptors.response.use(
           return Promise.reject(error);
         }
       } catch (refreshError) {
-        processQueue(refreshError as AxiosError, null);
+        const axiosRefreshError = refreshError as AxiosError<{
+          detail?: string;
+          message?: string;
+        }>;
+        
+        // Логируем ошибку для отладки
+        console.error("Token refresh failed:", axiosRefreshError.response?.data || axiosRefreshError.message);
+        
+        processQueue(axiosRefreshError, null);
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         isRefreshing = false;
         window.location.href = "/login";
-        return Promise.reject(refreshError);
+        return Promise.reject(axiosRefreshError);
       }
     }
 
