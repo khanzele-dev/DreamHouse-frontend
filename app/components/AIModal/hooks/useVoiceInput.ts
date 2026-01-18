@@ -23,11 +23,6 @@ interface UseVoiceInputProps {
   onFinalText: (text: string) => void;
 }
 
-/**
- * Хук для голосового ввода с Voice Activity Detection (VAD).
- * Использует Web Speech API + анализ громкости для определения тишины.
- * НЕ отправляет сообщение самостоятельно — только вызывает onFinalText.
- */
 export function useVoiceInput({ onFinalText }: UseVoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
@@ -49,7 +44,6 @@ export function useVoiceInput({ onFinalText }: UseVoiceInputProps) {
   const SILENCE_TIME = 2000; // 2 секунды тишины
 
   useEffect(() => {
-    // Инициализируем Web Speech API
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognitionConstructor =
         (
@@ -122,9 +116,6 @@ export function useVoiceInput({ onFinalText }: UseVoiceInputProps) {
     };
   }, []);
 
-  /**
-   * VAD: Определение тишины через анализ громкости
-   */
   const startVAD = useCallback(() => {
     if (!analyserRef.current) return;
 
@@ -168,9 +159,6 @@ export function useVoiceInput({ onFinalText }: UseVoiceInputProps) {
     silenceStartRef.current = null;
   }, []);
 
-  /**
-   * Останавливает запись и вызывает callback с финальным текстом
-   */
   const stopListening = useCallback(() => {
     setIsListening(false);
     isListeningRef.current = false;

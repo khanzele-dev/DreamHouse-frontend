@@ -158,7 +158,7 @@ function CardBottomSection({ card }: { card: ICard }) {
   const tabFromUrl = searchParams.get("tab");
   const [tab, setTab] = useState(tabFromUrl || "characteristics");
   const tabsRef = useRef<HTMLDivElement>(null);
-  const questions = card.questions || [];
+  const questions = card?.questions || [];
   const left = [
     { label: "Город", value: translateCity(card.city) },
     {
@@ -258,11 +258,11 @@ function CardBottomSection({ card }: { card: ICard }) {
             backgroundColor: "rgba(var(--accent-secondary-rgb))",
           }}
         >
-          {questions && questions.length > 0 ? (
+          {/* {questions && questions.length > 0 ? (
             <ul className="space-y-4">
-              {questions.map((question, i) => (
+              {questions.map((question) => (
                 <li
-                  key={i}
+                  key={question.id}
                   className="p-4 rounded-lg"
                   style={{
                     backgroundColor: "rgba(var(--bg-secondary-rgb), 0.3)",
@@ -277,14 +277,14 @@ function CardBottomSection({ card }: { card: ICard }) {
                 </li>
               ))}
             </ul>
-          ) : (
+          ) : ( */}
             <p
               className="text-center py-4 text-base"
               style={{ color: "var(--text-secondary)" }}
             >
               Вопросы пока отсутствуют
             </p>
-          )}
+          {/* )} */}
         </div>
       )}
       <LocationAccordion

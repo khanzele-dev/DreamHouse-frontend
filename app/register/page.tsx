@@ -32,7 +32,12 @@ function RegisterContent() {
 
   const refCode = searchParams.get("ref_code") || undefined;
 
-  const { seconds, canResend, start: startTimer, reset: resetTimer } = useOtpTimer({
+  const {
+    seconds,
+    canResend,
+    start: startTimer,
+    reset: resetTimer,
+  } = useOtpTimer({
     initialSeconds: 60,
   });
 
@@ -54,11 +59,12 @@ function RegisterContent() {
 
     try {
       const normalizedPhone = normalizePhone(data.phone_number);
-      const res = await requestRegisterSms(normalizedPhone);
+      setName(data.name.trim());
+      console.log(name)
+      const res = await requestRegisterSms(name, normalizedPhone);
 
       if (res.detail || res.ok) {
         setPhoneNumber(normalizedPhone);
-        setName(data.name.trim());
         setStep("otp");
         startTimer();
       }
@@ -111,12 +117,15 @@ function RegisterContent() {
     setOtp("");
 
     try {
-      const res = await requestRegisterSms(phoneNumber);
+      const res = await requestRegisterSms(name, phoneNumber);
       if (res.detail || res.ok) {
         startTimer();
       }
     } catch (err: unknown) {
-      const errorMessage = getErrorMessage(err, "Ошибка повторной отправки SMS");
+      const errorMessage = getErrorMessage(
+        err,
+        "Ошибка повторной отправки SMS"
+      );
       setError(errorMessage);
     } finally {
       setRequestingCode(false);
@@ -293,7 +302,7 @@ function RegisterContent() {
           </h4>
           {error && (
             <div
-              className="mb-4 p-3 rounded-lg border"
+              className="max-w-[500px] mb-4 p-3 rounded-lg border"
               style={{
                 backgroundColor: "var(--error-bg, #fee2e2)",
                 borderColor: "var(--error-border, #f87171)",
@@ -336,14 +345,14 @@ function RegisterContent() {
                   {...register("name", {
                     required: "Это поле является обязательным",
                     minLength: { value: 2, message: "Минимум 2 символа" },
-                    maxLength: { value: 50, message: "Максимум 50 символов" },
+                    maxLength: { value: 25, message: "Максимум 50 символов" },
                     pattern: {
                       value: /^[а-яА-ЯёЁa-zA-Z\s-]+$/,
                       message:
                         "Имя может содержать только буквы, пробелы и дефисы",
                     },
                   })}
-                  placeholder="Иван Иванов"
+                  placeholder="Магомед"
                   style={{
                     backgroundColor: "var(--card-bg)",
                     borderColor: "var(--border-color)",
@@ -396,7 +405,9 @@ function RegisterContent() {
                   autoComplete="tel"
                   onChange={(e) => {
                     const formatted = formatPhone(e.target.value);
-                    setValue("phone_number", formatted, { shouldValidate: true });
+                    setValue("phone_number", formatted, {
+                      shouldValidate: true,
+                    });
                   }}
                 />
                 {errors.phone_number && (
@@ -503,7 +514,8 @@ function RegisterContent() {
                       transition: "color 0.3s ease",
                     }}
                   >
-                    Отправить код повторно можно через {Math.floor(seconds / 60)}:
+                    Отправить код повторно можно через{" "}
+                    {Math.floor(seconds / 60)}:
                     {(seconds % 60).toString().padStart(2, "0")}
                   </p>
                 )}

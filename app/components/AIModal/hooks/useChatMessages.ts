@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import config from '@/app/shared/config/axios';
 import { AIMessage } from './useChatHistory';
+import { AxiosError } from 'axios';
+import { getErrorMessage } from '@/app/shared/types/errors';
 
 /**
  * Хук для управления отправкой сообщений в AI-чат.
@@ -10,6 +12,7 @@ import { AIMessage } from './useChatHistory';
 export function useChatMessages() {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Универсальная функция отправки сообщения.
@@ -19,6 +22,7 @@ export function useChatMessages() {
     if (!text.trim() || isLoading) return;
 
     setIsLoading(true);
+    setError(null);
 
     // Создаём временное сообщение пользователя
     const tempUserMessage: AIMessage = {
@@ -48,11 +52,43 @@ export function useChatMessages() {
       setMessages((prev) =>
         prev.map((m) => (m.id === tempUserMessage.id ? newMessage : m))
       );
-    } catch (error) {
-      console.error('Ошибка при отправке сообщения:', error);
+    } catch (err) {
+      console.error('Ошибка при отправке сообщения:', err);
+      
       // Удаляем временное сообщение при ошибке
       setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
-      throw error;
+      
+      // Формируем понятное сообщение об ошибке
+      let errorMessage = 'Произошла ошибка при отправке сообщения';
+      
+      if (err instanceof AxiosError) {
+        const status = err.response?.status;
+        
+        if (status === 503) {
+          errorMessage = 'Сервис временно недоступен. Пожалуйста, попробуйте позже.';
+        } else if (status === 500) {
+          errorMessage = 'Внутренняя ошибка сервера. Пожалуйста, попробуйте позже.';
+        } else if (status === 429) {
+          errorMessage = 'Слишком много запросов. Пожалуйста, подождите немного.';
+        } else if (status === 401 || status === 403) {
+          errorMessage = 'Необходимо авторизоваться.';
+        } else if (err.response?.data) {
+          const data = err.response.data;
+          if (typeof data === 'string') {
+            errorMessage = data;
+          } else if (data.detail) {
+            errorMessage = data.detail;
+          } else if (data.message) {
+            errorMessage = data.message;
+          }
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+      } else {
+        errorMessage = getErrorMessage(err, errorMessage);
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +97,8 @@ export function useChatMessages() {
   return {
     messages,
     isLoading,
+    error,
     sendMessage,
+    clearError: () => setError(null),
   };
 }

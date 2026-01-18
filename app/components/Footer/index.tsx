@@ -26,7 +26,7 @@ const footerList = [
 export function Footer() {
   const pathname = usePathname();
 
-  if (["/login", "/register", "/forgot"].includes(pathname)) {
+  if (["/login", "/register", "/forgot", "/chat"].includes(pathname)) {
     return null;
   }
 

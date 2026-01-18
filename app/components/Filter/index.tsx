@@ -1,10 +1,10 @@
 "use client";
 
 import { FilterButton } from "@/app/components/Filter/ui/FilterButton";
-import { AIModal } from "@/app/components/AIModal";
 import { ICardFilters } from "@/app/types";
 import { useCallback, useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { useAppSelector } from "@/app/shared/redux/hooks";
+import { useRouter } from "next/navigation";
 
 const FiltersModal = lazy(() => import("@/app/components/Filter/ui/FiltersModal").then(m => ({ default: m.FiltersModal })));
 const ModalShell = lazy(() => import("@/app/components/Filter/ui/ModalShell").then(m => ({ default: m.ModalShell })));
@@ -19,8 +19,8 @@ export default function FiltersPanel({
   currentFilters = {},
 }: FiltersPanelProps) {
   const { isAuth } = useAppSelector((state) => state.auth);
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [isAIOpen, setIsAIOpen] = useState(false);
   
   // Мемоизируем currentFilters для стабильности
   const currentFiltersString = useMemo(() => JSON.stringify(currentFilters), [currentFilters]);
@@ -49,12 +49,8 @@ export default function FiltersPanel({
       alert('Для использования ИИ-помощника необходимо войти в систему');
       return;
     }
-    setIsAIOpen(true);
-  }, [isAuth]);
-
-  const handleAIClose = useCallback(() => {
-    setIsAIOpen(false);
-  }, []);
+    router.push('/chat');
+  }, [isAuth, router]);
 
   return (
     <div className="flex items-center gap-x-2">
@@ -112,7 +108,6 @@ export default function FiltersPanel({
           </ModalShell>
         </Suspense>
       )}
-      {isAIOpen && <AIModal onClose={handleAIClose} />}
     </div>
   );
 }

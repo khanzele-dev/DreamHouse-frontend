@@ -132,7 +132,7 @@ const ThemeToggle = ({
   </svg>
 );
 
-const AUTH_EXCLUDED_PATHS = ["/login", "/register", "/forgot"];
+const AUTH_EXCLUDED_PATHS = ["/login", "/register", "/forgot", "/chat"];
 
 export const Header = () => {
   const pathname = usePathname();

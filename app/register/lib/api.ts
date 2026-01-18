@@ -35,6 +35,7 @@ export interface ConfirmRegisterResponse {
 }
 
 export async function requestRegisterSms(
+  name: string,
   phone: string
 ): Promise<RegisterSmsResponse> {
   const res = await fetch(`${API_BASE}/users/register/`, {
@@ -43,6 +44,7 @@ export async function requestRegisterSms(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      name,
       phone_number: phone,
     }),
   });

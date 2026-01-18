@@ -80,7 +80,7 @@ export interface ICard {
   images: ICardImage[];
   videos: IVideo[];
   documents?: IDocument[];
-  questions?: string[];
+  questions?: [];
   reviews?: IReview[];
   recommendations?: ICard[];
   list_curations?: ICard[];

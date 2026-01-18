@@ -168,7 +168,7 @@ export function AccountSection({
               maxWidth: "100%",
               opacity: "0.6",
             }}
-            placeholder="Магомед Ибрагимов"
+            placeholder="Магомед"
           />
         </div>
 

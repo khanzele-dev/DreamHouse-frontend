@@ -12,11 +12,6 @@ export interface AIMessage {
   created_at: string;
 }
 
-/**
- * Хук для загрузки истории чата с сервера.
- * Загружает историю ОДИН раз при монтировании.
- * Возвращает последние 5 диалогов (вопрос + ответ).
- */
 export function useChatHistory() {
   const [history, setHistory] = useState<AIMessage[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -29,8 +24,12 @@ export function useChatHistory() {
     setIsLoadingHistory(true);
     try {
       const response = await config.get('/cards/ai/history/');
+      // API возвращает объект с полем results, содержащим массив сообщений
+      const messages = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.results || []);
       // Берём только первые 5 сообщений (как приходит с сервера) и переворачиваем
-      const firstFiveMessages = response.data.slice(0, 5).reverse();
+      const firstFiveMessages = messages.slice(0, 5).reverse();
       setHistory(firstFiveMessages);
     } catch (error) {
       console.error('Ошибка при загрузке истории:', error);
